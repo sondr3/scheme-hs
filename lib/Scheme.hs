@@ -1,4 +1,3 @@
-module Scheme (someFunc) where
+module Scheme (module Scheme.Parser) where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+import Scheme.Parser

@@ -66,10 +66,14 @@ test-suite scheme-hs-test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs  
-  other-modules:      Scheme.SchemeSpec
+  other-modules:      
+    Scheme.SchemeSpec
+    Scheme.ParserSpec
+    Scheme.TestUtils
   default-extensions: OverloadedStrings
   build-tool-depends: hspec-discover:hspec-discover ^>=2.7.4
   build-depends:
+    , scheme-hs
     , hspec             ^>=2.7.4
     , hspec-megaparsec  ^>=2.2.0
 

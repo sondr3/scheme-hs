@@ -3,4 +3,5 @@ module Scheme.SchemeSpec (spec) where
 import Test.Hspec
 
 spec :: Spec
-spec = undefined
+spec = parallel $ do
+  it "works" True
