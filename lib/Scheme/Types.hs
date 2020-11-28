@@ -2,16 +2,17 @@ module Scheme.Types where
 
 import Data.Text (Text)
 
-data SchemeType
+data SchemeVal
   = String Text
   | Character Char
   | Symbol Text
   | Integer Integer
   | Boolean Bool
 
-instance Show SchemeType where
+instance Show SchemeVal where
   show (String s) = show s
   show (Character a) = show a
   show (Symbol s) = "'" <> show s
   show (Integer i) = show i
-  show (Boolean b) = show b
+  show (Boolean True) = "#t"
+  show (Boolean False) = "#f"

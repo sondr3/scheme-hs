@@ -5,6 +5,7 @@ module Scheme.Parser where
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
+import Scheme.Types (SchemeVal (..))
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -33,11 +34,36 @@ brackets = between (symbol "[") (symbol "]")
 braces :: Parser a -> Parser a
 braces = between (symbol "{") (symbol "}")
 
-integer :: Parser Integer
-integer = lexeme L.decimal <?> "integer"
+pInteger :: Parser Integer
+pInteger = L.decimal
 
-signedInteger :: Parser Integer
-signedInteger = L.signed sc integer <?> "signed integer"
+pSignedInteger :: Parser Integer
+pSignedInteger = L.signed sc pInteger
+
+pBinaryInteger :: Parser Integer
+pBinaryInteger = chunk "#b" >> L.binary
+
+pOctalInteger :: Parser Integer
+pOctalInteger = chunk "#o" >> L.octal
+
+pDecimalInteger :: Parser Integer
+pDecimalInteger = chunk "#d" >> L.decimal
+
+pHexadecimalInteger :: Parser Integer
+pHexadecimalInteger = chunk "#x" >> L.hexadecimal
+
+integer :: Parser SchemeVal
+integer =
+  lexeme $
+    Integer
+      <$> choice
+        [ pInteger,
+          pSignedInteger,
+          pBinaryInteger,
+          pOctalInteger,
+          pDecimalInteger,
+          pHexadecimalInteger
+        ]
 
 identifier :: Parser Text
 identifier = lexeme (T.pack <$> start <> rest) <?> "identifier"
@@ -46,5 +72,12 @@ identifier = lexeme (T.pack <$> start <> rest) <?> "identifier"
     start = many (letterChar <|> extendedSymbols)
     rest = many (alphaNumChar <|> extendedSymbols)
 
-string :: Parser Text
-string = T.pack <$> (char '"' *> manyTill L.charLiteral (char '"'))
+string :: Parser SchemeVal
+string = String . T.pack <$> (char '"' *> manyTill L.charLiteral (char '"'))
+
+boolean :: Parser SchemeVal
+boolean =
+  choice
+    [ Boolean True <$ chunk "#t",
+      Boolean False <$ chunk "#f"
+    ]
