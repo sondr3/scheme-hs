@@ -1,5 +1,6 @@
 module Scheme.Types where
 
+import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
 
 data SchemeVal
@@ -8,6 +9,7 @@ data SchemeVal
   | Symbol Text
   | Integer Integer
   | Double Double
+  | Rational Rational
   | Boolean Bool
 
 instance Show SchemeVal where
@@ -16,5 +18,6 @@ instance Show SchemeVal where
   show (Symbol s) = "'" <> show s
   show (Integer i) = show i
   show (Double d) = show d
+  show (Rational r) = show (numerator r) <> "/" <> show (denominator r)
   show (Boolean True) = "#t"
   show (Boolean False) = "#f"

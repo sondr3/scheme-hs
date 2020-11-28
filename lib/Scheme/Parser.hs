@@ -2,6 +2,8 @@
 
 module Scheme.Parser where
 
+import Control.Monad (void)
+import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
@@ -75,8 +77,16 @@ pSignedDouble = L.signed (return ()) pDouble
 double :: Parser SchemeVal
 double = lexeme $ Double <$> (pSignedDouble <?> "double")
 
+pRational :: Parser SchemeVal
+pRational = do
+  numerator <- pSignedInteger
+  void (char '/')
+  denominator <- pSignedInteger
+  -- TODO: Fix error if denominator is 0
+  return $ Rational (numerator % denominator)
+
 number :: Parser SchemeVal
-number = try (double <|> integer) <?> "number"
+number = try (pRational <|> double <|> integer) <?> "number"
 
 identifier :: Parser Text
 identifier = lexeme (T.pack <$> start <> rest) <?> "identifier"
