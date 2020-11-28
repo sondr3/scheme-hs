@@ -52,14 +52,16 @@ library
     Scheme.Parser
     Scheme.Types
 
+-- build-depends:   
+
 executable scheme
   import:         config
   main-is:        Main.hs
   build-depends:  scheme-hs
   hs-source-dirs: app
 
-  -- other-modules:
-  -- other-extensions:
+-- other-modules:
+-- other-extensions:
 
 test-suite scheme-hs-test
   import:             config

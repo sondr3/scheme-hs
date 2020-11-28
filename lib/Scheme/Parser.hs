@@ -38,7 +38,7 @@ pInteger :: Parser Integer
 pInteger = L.decimal
 
 pSignedInteger :: Parser Integer
-pSignedInteger = L.signed sc pInteger
+pSignedInteger = L.signed (return ()) pInteger
 
 pBinaryInteger :: Parser Integer
 pBinaryInteger = chunk "#b" >> L.binary
@@ -57,8 +57,7 @@ integer =
   lexeme $
     Integer
       <$> ( choice
-              [ pInteger,
-                pSignedInteger,
+              [ pSignedInteger,
                 pBinaryInteger,
                 pOctalInteger,
                 pDecimalInteger,
@@ -71,10 +70,13 @@ pDouble :: Parser Double
 pDouble = L.float
 
 pSignedDouble :: Parser Double
-pSignedDouble = L.signed sc pDouble
+pSignedDouble = L.signed (return ()) pDouble
 
-float :: Parser SchemeVal
-float = lexeme $ Double <$> (pDouble <|> pSignedDouble <?> "double")
+double :: Parser SchemeVal
+double = lexeme $ Double <$> (pSignedDouble <?> "double")
+
+number :: Parser SchemeVal
+number = try (double <|> integer) <?> "number"
 
 identifier :: Parser Text
 identifier = lexeme (T.pack <$> start <> rest) <?> "identifier"
