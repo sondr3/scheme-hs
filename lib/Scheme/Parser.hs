@@ -3,6 +3,7 @@
 module Scheme.Parser where
 
 import Control.Monad (void)
+import Data.Complex (Complex ((:+)))
 import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -68,14 +69,14 @@ integer =
               <?> "integer"
           )
 
-pDouble :: Parser Double
-pDouble = L.float
+pReal :: Parser Double
+pReal = L.float
 
-pSignedDouble :: Parser Double
-pSignedDouble = L.signed (return ()) pDouble
+pSignedReal :: Parser Double
+pSignedReal = L.signed (return ()) pReal
 
 double :: Parser SchemeVal
-double = lexeme $ Double <$> (pSignedDouble <?> "double")
+double = lexeme $ Real <$> (pSignedReal <?> "double")
 
 pRational :: Parser SchemeVal
 pRational = do
@@ -85,8 +86,16 @@ pRational = do
   -- TODO: Fix error if denominator is 0
   return $ Rational (numerator % denominator)
 
+pComplex :: Parser SchemeVal
+pComplex = do
+  real <- pSignedReal
+  void (char '+')
+  imag <- try (fromInteger <$> pInteger <|> pReal)
+  void (char 'i')
+  return $ Complex (real :+ imag)
+
 number :: Parser SchemeVal
-number = try (pRational <|> double <|> integer) <?> "number"
+number = try (pComplex <|> pRational <|> double <|> integer) <?> "number"
 
 identifier :: Parser Text
 identifier = lexeme (T.pack <$> start <> rest) <?> "identifier"
