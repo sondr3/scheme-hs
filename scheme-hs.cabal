@@ -46,35 +46,36 @@ common library
 
 library
   import:          config, library
-  exposed-modules: Scheme
-  other-modules:   Scheme.Parser
-
-  -- other-extensions:
   hs-source-dirs:  lib
+  exposed-modules: Scheme
+  other-modules:
+    Scheme.Parser
+    Scheme.Types
 
 executable scheme
   import:         config
   main-is:        Main.hs
+  build-depends:  scheme-hs
+  hs-source-dirs: app
 
   -- other-modules:
   -- other-extensions:
-  build-depends:  scheme-hs
-  hs-source-dirs: app
 
 test-suite scheme-hs-test
   import:             config
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs  
-  other-modules:      
-    Scheme.SchemeSpec
+  other-modules:
     Scheme.ParserSpec
+    Scheme.SchemeSpec
     Scheme.TestUtils
+
   default-extensions: OverloadedStrings
   build-tool-depends: hspec-discover:hspec-discover ^>=2.7.4
   build-depends:
-    , scheme-hs
     , hspec             ^>=2.7.4
     , hspec-megaparsec  ^>=2.2.0
+    , scheme-hs
 
   ghc-options:        -threaded -rtsopts -with-rtsopts=-N
