@@ -56,14 +56,25 @@ integer :: Parser SchemeVal
 integer =
   lexeme $
     Integer
-      <$> choice
-        [ pInteger,
-          pSignedInteger,
-          pBinaryInteger,
-          pOctalInteger,
-          pDecimalInteger,
-          pHexadecimalInteger
-        ]
+      <$> ( choice
+              [ pInteger,
+                pSignedInteger,
+                pBinaryInteger,
+                pOctalInteger,
+                pDecimalInteger,
+                pHexadecimalInteger
+              ]
+              <?> "integer"
+          )
+
+pDouble :: Parser Double
+pDouble = L.float
+
+pSignedDouble :: Parser Double
+pSignedDouble = L.signed sc pDouble
+
+float :: Parser SchemeVal
+float = lexeme $ Double <$> (pDouble <|> pSignedDouble <?> "double")
 
 identifier :: Parser Text
 identifier = lexeme (T.pack <$> start <> rest) <?> "identifier"
