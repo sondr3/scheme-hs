@@ -91,7 +91,11 @@ number :: Parser SchemeVal
 number = Number <$> choice (map (try . lexeme) [pComplex, pRational, pDouble, integer])
 
 pSymbol :: Parser SchemeVal
-pSymbol = Symbol <$> try (lexeme (T.pack <$> start <> rest <?> "identifier"))
+pSymbol = try $ do
+  ident <- lexeme (T.pack <$> start <> rest <?> "identifier")
+  if ident == "."
+    then empty
+    else return $ Symbol ident
   where
     extendedSymbols = satisfy (`elem` ['!', '$', '%', '&', '*', '+', '-', '.', '/', ':', '<', '=', '>', '?', '@', '^', '_', '~'])
     start = some (letterChar <|> extendedSymbols)
