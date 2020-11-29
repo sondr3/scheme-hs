@@ -21,6 +21,7 @@ instance Show Number where
 
 data SchemeVal
   = List [SchemeVal]
+  | PairList [SchemeVal] SchemeVal
   | String Text
   | Character Char
   | Symbol Text
@@ -29,6 +30,7 @@ data SchemeVal
 
 instance Show SchemeVal where
   show (List contents) = "(" <> unwords (map show contents) <> ")"
+  show (PairList contents cdr) = "(" <> unwords (map show contents) <> " . " <> show cdr <> ")"
   show (String s) = show s
   show (Character a) = show a
   show (Symbol s) = T.unpack s

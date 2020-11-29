@@ -117,14 +117,27 @@ boolean =
         ]
     )
 
+pPairList :: Parser SchemeVal
+pPairList = try $
+  parens $ do
+    ls <- pExpr `sepEndBy` sc <?> "dotted pair car"
+    dot <- optional (symbol "." >> pExpr) <?> "pair"
+    pure $ case dot of
+      Nothing -> List ls
+      Just (List c) -> List (ls ++ c)
+      Just (PairList car cdr) -> PairList (ls ++ car) cdr
+      Just val -> PairList ls val
+
 pList :: Parser SchemeVal
-pList = List <$> try (parens (pExpr `sepEndBy` sc))
+pList = List <$> try (parens (pExpr `sepEndBy` sc)) <?> "list"
 
 pExpr :: Parser SchemeVal
 pExpr =
   number
-    <|> boolean
     <|> pChar
-    <|> pString
     <|> pSymbol
-    <|> pList <?> "expression"
+    <|> pString
+    <|> boolean
+    <|> pList
+    <|> pPairList
+    <?> "expression"
