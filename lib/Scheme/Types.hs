@@ -5,6 +5,7 @@ module Scheme.Types where
 import Data.Complex (Complex, imagPart, realPart)
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
+import qualified Data.Text as T
 
 data Number
   = Integer Integer
@@ -30,7 +31,7 @@ instance Show SchemeVal where
   show (List contents) = "(" <> unwords (map show contents) <> ")"
   show (String s) = show s
   show (Character a) = show a
-  show (Symbol s) = "'" <> show s
+  show (Symbol s) = "'" ++ T.unpack s
   show (Boolean True) = "#t"
   show (Boolean False) = "#f"
   show (Number num) = show num

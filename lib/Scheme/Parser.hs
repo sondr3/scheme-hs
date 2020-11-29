@@ -100,6 +100,9 @@ pSymbol = Symbol <$> try (lexeme (T.pack <$> start <> rest <?> "identifier"))
 pString :: Parser SchemeVal
 pString = try $ lexeme $ String . T.pack <$> (char '"' *> manyTill L.charLiteral (char '"'))
 
+pChar :: Parser SchemeVal
+pChar = try $ lexeme $ Character <$> between (char '\'') (char '\'') L.charLiteral
+
 boolean :: Parser SchemeVal
 boolean =
   choice
@@ -114,4 +117,10 @@ pList :: Parser SchemeVal
 pList = List <$> try (parens (pExpr `sepEndBy` sc))
 
 pExpr :: Parser SchemeVal
-pExpr = number <|> boolean <|> pString <|> pSymbol <|> pList <?> "expression"
+pExpr =
+  number
+    <|> boolean
+    <|> pChar
+    <|> pString
+    <|> pSymbol
+    <|> pList <?> "expression"
