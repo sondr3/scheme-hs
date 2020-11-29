@@ -8,7 +8,7 @@ import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
-import Scheme.Types (SchemeVal (..))
+import Scheme.Types (Number (..), SchemeVal (..))
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -38,10 +38,7 @@ braces :: Parser a -> Parser a
 braces = between (symbol "{") (symbol "}")
 
 pInteger :: Parser Integer
-pInteger = L.decimal
-
-pSignedInteger :: Parser Integer
-pSignedInteger = L.signed (return ()) pInteger
+pInteger = L.signed (return ()) L.decimal
 
 pBinaryInteger :: Parser Integer
 pBinaryInteger = chunk "#b" >> L.binary
@@ -55,61 +52,63 @@ pDecimalInteger = chunk "#d" >> L.decimal
 pHexadecimalInteger :: Parser Integer
 pHexadecimalInteger = chunk "#x" >> L.hexadecimal
 
-integer :: Parser SchemeVal
+integer :: Parser Number
 integer =
-  lexeme $
-    Integer
-      <$> ( choice
-              [ pSignedInteger,
-                pBinaryInteger,
-                pOctalInteger,
-                pDecimalInteger,
-                pHexadecimalInteger
-              ]
-              <?> "integer"
-          )
+  Integer
+    <$> ( choice
+            [ pInteger,
+              pBinaryInteger,
+              pOctalInteger,
+              pDecimalInteger,
+              pHexadecimalInteger
+            ]
+            <?> "integer"
+        )
 
 pReal :: Parser Double
-pReal = L.float
+pReal = L.signed (return ()) L.float
 
-pSignedReal :: Parser Double
-pSignedReal = L.signed (return ()) pReal
+pDouble :: Parser Number
+pDouble = Real <$> (pReal <?> "double")
 
-double :: Parser SchemeVal
-double = lexeme $ Real <$> (pSignedReal <?> "double")
-
-pRational :: Parser SchemeVal
+pRational :: Parser Number
 pRational = do
-  numerator <- pSignedInteger
+  numerator <- pInteger
   void (char '/')
-  denominator <- pSignedInteger
+  denominator <- pInteger
   -- TODO: Fix error if denominator is 0
   return $ Rational (numerator % denominator)
 
-pComplex :: Parser SchemeVal
+pComplex :: Parser Number
 pComplex = do
-  real <- pSignedReal
+  real <- pReal
   void (char '+')
   imag <- try (fromInteger <$> pInteger <|> pReal)
   void (char 'i')
   return $ Complex (real :+ imag)
 
 number :: Parser SchemeVal
-number = try (pComplex <|> pRational <|> double <|> integer) <?> "number"
+number = Number <$> choice (map (try . lexeme) [pComplex, pRational, pDouble, integer])
 
-identifier :: Parser Text
-identifier = lexeme (T.pack <$> start <> rest) <?> "identifier"
+identifier :: Parser SchemeVal
+identifier = lexeme $ Symbol <$> (T.pack <$> start <> rest <?> "identifier")
   where
     extendedSymbols = satisfy (`elem` ['!', '$', '%', '&', '*', '+', '-', '.', '/', ':', '<', '=', '>', '?', '@', '^', '_', '~'])
     start = many (letterChar <|> extendedSymbols)
     rest = many (alphaNumChar <|> extendedSymbols)
 
-string :: Parser SchemeVal
-string = String . T.pack <$> (char '"' *> manyTill L.charLiteral (char '"'))
+pString :: Parser SchemeVal
+pString = lexeme $ String . T.pack <$> (char '"' *> manyTill L.charLiteral (char '"'))
 
 boolean :: Parser SchemeVal
 boolean =
   choice
-    [ Boolean True <$ chunk "#t",
-      Boolean False <$ chunk "#f"
-    ]
+    ( map
+        lexeme
+        [ Boolean True <$ chunk "#t",
+          Boolean False <$ chunk "#f"
+        ]
+    )
+
+parseExpr :: Parser SchemeVal
+parseExpr = number <|> pString <|> boolean <|> identifier <?> "expression"
