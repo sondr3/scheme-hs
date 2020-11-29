@@ -3,11 +3,14 @@
 module Scheme.Parser where
 
 import Control.Monad (void)
+import Data.Array (listArray)
+import qualified Data.ByteString as BS
 import Data.Complex (Complex ((:+)))
 import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
+import Data.Word (Word8)
 import Scheme.Types (Number (..), SchemeVal (..))
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -131,6 +134,22 @@ pPairList = try $
 pList :: Parser SchemeVal
 pList = List <$> try (parens (pExpr `sepEndBy` sc)) <?> "list"
 
+pVector :: Parser SchemeVal
+pVector = try $ do
+  void (symbol "#(")
+  ls <- pExpr `sepEndBy` sc
+  void (symbol ")")
+  return $ Vector (listArray (0, length ls - 1) ls)
+
+pBytevector :: Parser SchemeVal
+pBytevector = try $ do
+  void (symbol "#u8(")
+  ls <- pInteger `sepEndBy` sc
+  void (symbol ")")
+  return $ Bytevector (BS.pack $ map toByte ls)
+  where
+    toByte num = fromInteger num :: Word8
+
 pExpr :: Parser SchemeVal
 pExpr =
   number
@@ -140,4 +159,6 @@ pExpr =
     <|> boolean
     <|> pList
     <|> pPairList
+    <|> pVector
+    <|> pBytevector
     <?> "expression"
