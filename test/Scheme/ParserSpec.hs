@@ -14,4 +14,4 @@ spec = parallel $ do
 
     forM_ idents $ \ident ->
       it (printf "parses %s" ident) $ do
-        testParse identifier ident `shouldParse` ident
+        testParse pSymbol `shouldSucceedOn` ident

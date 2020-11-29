@@ -90,15 +90,15 @@ pComplex = do
 number :: Parser SchemeVal
 number = Number <$> choice (map (try . lexeme) [pComplex, pRational, pDouble, integer])
 
-identifier :: Parser SchemeVal
-identifier = lexeme $ Symbol <$> (T.pack <$> start <> rest <?> "identifier")
+pSymbol :: Parser SchemeVal
+pSymbol = Symbol <$> try (lexeme (T.pack <$> start <> rest <?> "identifier"))
   where
     extendedSymbols = satisfy (`elem` ['!', '$', '%', '&', '*', '+', '-', '.', '/', ':', '<', '=', '>', '?', '@', '^', '_', '~'])
-    start = many (letterChar <|> extendedSymbols)
+    start = some (letterChar <|> extendedSymbols)
     rest = many (alphaNumChar <|> extendedSymbols)
 
 pString :: Parser SchemeVal
-pString = lexeme $ String . T.pack <$> (char '"' *> manyTill L.charLiteral (char '"'))
+pString = try $ lexeme $ String . T.pack <$> (char '"' *> manyTill L.charLiteral (char '"'))
 
 boolean :: Parser SchemeVal
 boolean =
@@ -110,5 +110,8 @@ boolean =
         ]
     )
 
-parseExpr :: Parser SchemeVal
-parseExpr = number <|> pString <|> boolean <|> identifier <?> "expression"
+pList :: Parser SchemeVal
+pList = List <$> try (parens (pExpr `sepEndBy` sc))
+
+pExpr :: Parser SchemeVal
+pExpr = number <|> boolean <|> pString <|> pSymbol <|> pList <?> "expression"

@@ -19,13 +19,15 @@ instance Show Number where
   show (Complex p) = show (realPart p) <> "+" <> show (imagPart p) <> "i"
 
 data SchemeVal
-  = String Text
+  = List [SchemeVal]
+  | String Text
   | Character Char
   | Symbol Text
   | Boolean Bool
   | Number Number
 
 instance Show SchemeVal where
+  show (List contents) = "(" <> unwords (map show contents) <> ")"
   show (String s) = show s
   show (Character a) = show a
   show (Symbol s) = "'" <> show s
