@@ -31,7 +31,7 @@ instance Show SchemeVal where
   show (List contents) = "(" <> unwords (map show contents) <> ")"
   show (String s) = show s
   show (Character a) = show a
-  show (Symbol s) = "'" ++ T.unpack s
+  show (Symbol s) = T.unpack s
   show (Boolean True) = "#t"
   show (Boolean False) = "#f"
   show (Number num) = show num
