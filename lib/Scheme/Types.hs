@@ -36,6 +36,10 @@ data SchemeVal
   deriving (Show)
 
 showVal :: SchemeVal -> String
+showVal (List (Symbol "quote" : xs)) = "'" <> unwords (map showVal xs)
+showVal (List (Symbol "quasiquote" : xs)) = "`" <> unwords (map showVal xs)
+showVal (List (Symbol "unquote" : xs)) = "," <> unwords (map showVal xs)
+showVal (List (Symbol "unquote-splicing" : xs)) = ",@" <> unwords (map showVal xs)
 showVal (List contents) = "(" <> unwords (map showVal contents) <> ")"
 showVal (PairList contents cdr) = "(" <> unwords (map showVal contents) <> " . " <> show cdr <> ")"
 showVal (Vector vec) = "#(" <> unwords (map show $ elems vec) <> ")"

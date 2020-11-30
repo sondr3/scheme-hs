@@ -172,6 +172,30 @@ pBytevector = try $ do
   where
     toByte num = fromInteger num :: Word8
 
+pQuote :: Parser SchemeVal
+pQuote = do
+  void (try $ lexeme $ char '\'')
+  expr <- pExpr
+  return $ List [Symbol "quote", expr]
+
+pQuasiquote :: Parser SchemeVal
+pQuasiquote = do
+  void (try $ lexeme $ char '`')
+  expr <- pExpr
+  return $ List [Symbol "quasiquote", expr]
+
+pUnquote :: Parser SchemeVal
+pUnquote = do
+  void (try $ lexeme $ char ',')
+  expr <- pExpr
+  return $ List [Symbol "unquote", expr]
+
+pUnquoteSplicing :: Parser SchemeVal
+pUnquoteSplicing = do
+  void (try $ lexeme $ chunk ",@")
+  expr <- pExpr
+  return $ List [Symbol "unquote-splicing", expr]
+
 pExpr :: Parser SchemeVal
 pExpr =
   number
@@ -183,4 +207,8 @@ pExpr =
     <|> pPairList
     <|> pVector
     <|> pBytevector
+    <|> pQuote
+    <|> pQuasiquote
+    <|> pUnquoteSplicing
+    <|> pUnquote
     <?> "expression"
