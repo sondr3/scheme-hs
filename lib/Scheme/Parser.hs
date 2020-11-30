@@ -5,10 +5,12 @@ module Scheme.Parser where
 import Control.Monad (void)
 import Data.Array (listArray)
 import qualified Data.ByteString as BS
+import qualified Data.Char as C
 import Data.Complex (Complex ((:+)))
 import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Read (hexadecimal)
 import Data.Void (Void)
 import Data.Word (Word8)
 import Scheme.Types (Number (..), SchemeVal (..))
@@ -108,7 +110,27 @@ pString :: Parser SchemeVal
 pString = try $ lexeme $ String . T.pack <$> (char '"' *> manyTill L.charLiteral (char '"'))
 
 pChar :: Parser SchemeVal
-pChar = try $ lexeme $ Character <$> between (char '\'') (char '\'') L.charLiteral
+pChar = try $ do
+  void (chunk "#\\")
+  chr <- many asciiChar
+  case chr of
+    "alarm" -> return $ Character '\BEL'
+    "backspace" -> return $ Character '\BS'
+    "delete" -> return $ Character '\DEL'
+    "escape" -> return $ Character '\ESC'
+    "newline" -> return $ Character '\LF'
+    "null" -> return $ Character '\NUL'
+    "return" -> return $ Character '\CR'
+    "space" -> return $ Character ' '
+    "tab" -> return $ Character '\HT'
+    _ -> pChar' chr
+
+pChar' :: [Char] -> Parser SchemeVal
+pChar' [c] = pure (Character c) <?> "char"
+pChar' ('x' : hex) = case hexadecimal (T.pack hex) of
+  Right n -> return (Character <$> C.chr $ fst n) <?> "hex char"
+  _ -> empty
+pChar' _ = empty
 
 boolean :: Parser SchemeVal
 boolean =

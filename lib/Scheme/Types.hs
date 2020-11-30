@@ -38,7 +38,7 @@ instance Show SchemeVal where
   show (Vector vec) = "#(" <> unwords (map show $ elems vec) <> ")"
   show (Bytevector vec) = "#u8(" <> unwords (map show $ BS.unpack vec) <> ")"
   show (String s) = show s
-  show (Character a) = show a
+  show (Character a) = "#\\" <> [a]
   show (Symbol s) = T.unpack s
   show (Boolean True) = "#t"
   show (Boolean False) = "#f"
