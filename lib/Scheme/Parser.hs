@@ -107,11 +107,11 @@ pSymbol = try $ do
     rest = many (alphaNumChar <|> extendedSymbols)
 
 pString :: Parser SchemeVal
-pString = try $ lexeme $ String . T.pack <$> (char '"' *> manyTill L.charLiteral (char '"'))
+pString = lexeme $ String . T.pack <$> (char '"' *> manyTill L.charLiteral (char '"'))
 
 pChar :: Parser SchemeVal
-pChar = try $ do
-  void (chunk "#\\")
+pChar = do
+  void (try $ chunk "#\\")
   chr <- many asciiChar
   case chr of
     "alarm" -> return $ Character '\BEL'
@@ -134,13 +134,12 @@ pChar' _ = empty
 
 boolean :: Parser SchemeVal
 boolean =
-  choice
-    ( map
-        lexeme
-        [ Boolean True <$ chunk "#t",
-          Boolean False <$ chunk "#f"
-        ]
-    )
+  choice $
+    map
+      lexeme
+      [ Boolean True <$ chunk "#t",
+        Boolean False <$ chunk "#f"
+      ]
 
 pPairList :: Parser SchemeVal
 pPairList = try $
@@ -157,15 +156,15 @@ pList :: Parser SchemeVal
 pList = List <$> try (parens (pExpr `sepEndBy` sc)) <?> "list"
 
 pVector :: Parser SchemeVal
-pVector = try $ do
-  void (symbol "#(")
+pVector = do
+  void (try $ symbol "#(")
   ls <- pExpr `sepEndBy` sc
   void (symbol ")")
   return $ Vector (listArray (0, length ls - 1) ls)
 
 pBytevector :: Parser SchemeVal
-pBytevector = try $ do
-  void (symbol "#u8(")
+pBytevector = do
+  void (try $ symbol "#u8(")
   ls <- pInteger `sepEndBy` sc
   void (symbol ")")
   return $ Bytevector (BS.pack $ map toByte ls)
