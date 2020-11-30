@@ -8,18 +8,20 @@ import Data.Complex (Complex, imagPart, realPart)
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Text.Pretty.Simple (pPrint, pPrintLightBg)
 
 data Number
   = Integer Integer
   | Real Double
   | Rational Rational
   | Complex (Complex Double)
+  deriving (Show)
 
-instance Show Number where
-  show (Integer i) = show i
-  show (Real d) = show d
-  show (Rational r) = show (numerator r) <> "/" <> show (denominator r)
-  show (Complex p) = show (realPart p) <> "+" <> show (imagPart p) <> "i"
+showNumber :: Number -> String
+showNumber (Integer i) = show i
+showNumber (Real d) = show d
+showNumber (Rational r) = show (numerator r) <> "/" <> show (denominator r)
+showNumber (Complex p) = show (realPart p) <> "+" <> show (imagPart p) <> "i"
 
 data SchemeVal
   = List [SchemeVal]
@@ -31,15 +33,23 @@ data SchemeVal
   | Symbol Text
   | Boolean Bool
   | Number Number
+  deriving (Show)
 
-instance Show SchemeVal where
-  show (List contents) = "(" <> unwords (map show contents) <> ")"
-  show (PairList contents cdr) = "(" <> unwords (map show contents) <> " . " <> show cdr <> ")"
-  show (Vector vec) = "#(" <> unwords (map show $ elems vec) <> ")"
-  show (Bytevector vec) = "#u8(" <> unwords (map show $ BS.unpack vec) <> ")"
-  show (String s) = show s
-  show (Character a) = "#\\" <> [a]
-  show (Symbol s) = T.unpack s
-  show (Boolean True) = "#t"
-  show (Boolean False) = "#f"
-  show (Number num) = show num
+showVal :: SchemeVal -> String
+showVal (List contents) = "(" <> unwords (map showVal contents) <> ")"
+showVal (PairList contents cdr) = "(" <> unwords (map showVal contents) <> " . " <> show cdr <> ")"
+showVal (Vector vec) = "#(" <> unwords (map show $ elems vec) <> ")"
+showVal (Bytevector vec) = "#u8(" <> unwords (map show $ BS.unpack vec) <> ")"
+showVal (String s) = show s
+showVal (Character a) = "#\\" <> [a]
+showVal (Symbol s) = T.unpack s
+showVal (Boolean True) = "#t"
+showVal (Boolean False) = "#f"
+showVal (Number num) = showNumber num
+
+dumpAST :: SchemeVal -> IO ()
+dumpAST = dumpAST' True
+
+dumpAST' :: Bool -> SchemeVal -> IO ()
+dumpAST' True = pPrint
+dumpAST' False = pPrintLightBg
