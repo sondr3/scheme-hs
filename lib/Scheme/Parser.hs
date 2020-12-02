@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Scheme.Parser where
 
 import Control.Monad (void)

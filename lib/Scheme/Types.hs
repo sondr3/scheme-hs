@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Scheme.Types where
 
 import Data.Array (Array, elems)
