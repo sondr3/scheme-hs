@@ -20,4 +20,13 @@ eval (Symbol s) = do
   case e of
     Just val -> return val
     Nothing -> error "Unbound variable"
+eval (List [Symbol "quote", xs]) = return xs
+eval (List [Symbol "if", test, cons, alt]) = do
+  eval test >>= \case
+    Boolean True -> eval cons
+    _ -> eval alt
+eval (List [Symbol "if", test, cons]) = do
+  eval test >>= \case
+    Boolean True -> eval cons
+    _ -> return Nil
 eval _ = undefined

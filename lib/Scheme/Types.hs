@@ -31,6 +31,7 @@ data SchemeVal
   | Symbol Text
   | Boolean Bool
   | Number Number
+  | Nil
   deriving (Show)
 
 showVal :: SchemeVal -> String
@@ -48,6 +49,7 @@ showVal (Symbol s) = T.unpack s
 showVal (Boolean True) = "#t"
 showVal (Boolean False) = "#f"
 showVal (Number num) = showNumber num
+showVal Nil = "nil"
 
 dumpAST :: SchemeVal -> IO ()
 dumpAST = dumpAST' True
