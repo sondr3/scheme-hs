@@ -1,10 +1,10 @@
 module Scheme
   ( module Scheme.Parser,
     module Scheme.Types,
-    module Scheme.Environment,
+    module Scheme.Eval,
   )
 where
 
-import Scheme.Environment
+import Scheme.Eval
 import Scheme.Parser
 import Scheme.Types

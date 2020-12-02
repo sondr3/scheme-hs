@@ -3,10 +3,13 @@ module Scheme.Types where
 import Data.Array (Array, elems)
 import qualified Data.ByteString as BS
 import Data.Complex (Complex, imagPart, realPart)
+import qualified Data.Map.Strict as Map
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Pretty.Simple (pPrint, pPrintLightBg)
+
+type Environment = Map.Map Text SchemeVal
 
 data Number
   = Integer Integer
@@ -32,6 +35,7 @@ data SchemeVal
   | Boolean Bool
   | Number Number
   | Nil
+  | Procedure Environment SchemeVal [SchemeVal]
   deriving (Show)
 
 showVal :: SchemeVal -> String
@@ -50,6 +54,7 @@ showVal (Boolean True) = "#t"
 showVal (Boolean False) = "#f"
 showVal (Number num) = showNumber num
 showVal Nil = "nil"
+showVal Procedure {} = "<λ>"
 
 dumpAST :: SchemeVal -> IO ()
 dumpAST = dumpAST' True
