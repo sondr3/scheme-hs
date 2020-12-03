@@ -62,6 +62,7 @@ library
     Scheme.Parser
     Scheme.Types
     Scheme.Eval
+    Scheme.Primitives
 
 -- build-depends:   
 
