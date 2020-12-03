@@ -9,6 +9,7 @@ import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Pretty.Simple (pPrint, pPrintLightBg)
+import Text.Show.Functions ()
 
 type Environment = Map.Map Text SchemeVal
 
@@ -26,8 +27,9 @@ data SchemeVal
   | Rational Rational
   | Complex (Complex Double)
   | Nil
+  | PrimitiveExpression ([SchemeVal] -> Either SchemeError SchemeVal)
   | Procedure Environment SchemeVal [SchemeVal]
-  deriving (Show, Eq)
+  deriving (Show)
 
 castNum :: [SchemeVal] -> Either SchemeError SchemeVal
 castNum [x@(Integer _), y@(Integer _)] = return $ List [x, y]
@@ -64,6 +66,7 @@ showVal (Rational r) = show (numerator r) <> "/" <> show (denominator r)
 showVal (Complex p) = show (realPart p) <> "+" <> show (imagPart p) <> "i"
 showVal Nil = "nil"
 showVal Procedure {} = "<λ>"
+showVal PrimitiveExpression {} = "<λ>"
 
 dumpAST :: SchemeVal -> IO ()
 dumpAST = dumpAST' True
@@ -75,8 +78,10 @@ dumpAST' False = pPrintLightBg
 data SchemeError
   = Generic Text
   | TypeMismatch Text SchemeVal
+  | UnboundSymbol Text
   deriving (Show)
 
 showError :: SchemeError -> Text
 showError (TypeMismatch err vap) = "Invalid type: expected " <> err <> ", but found " <> T.pack (show vap)
 showError (Generic err) = "Unexpectec error: " <> err
+showError (UnboundSymbol sym) = "Unbound symbol: " <> sym

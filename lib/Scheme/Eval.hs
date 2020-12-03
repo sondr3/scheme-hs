@@ -16,10 +16,10 @@ eval val@(Rational _) = return val
 eval val@(Complex _) = return val
 eval val@(Boolean _) = return val
 eval (Symbol s) = do
-  e <- asks (Map.lookup s)
-  case e of
+  sym <- asks (Map.lookup s)
+  case sym of
     Just val -> return val
-    Nothing -> error "Unbound variable"
+    Nothing -> throwError $ UnboundSymbol s
 eval (List [Symbol "quote", xs]) = return xs
 eval (List [Symbol "if", test, cons, alt]) = do
   eval test >>= \case
@@ -35,4 +35,15 @@ eval (List (Symbol "lambda" : List formals : body)) = do
 eval (List (Symbol "lambda" : Symbol formal : body)) = do
   env <- ask
   return $ Procedure env (Symbol formal) body
+eval (List (fun : args)) = do
+  f <- eval fun
+  mapM eval args >>= apply f
 eval _ = undefined
+
+apply :: MonadError SchemeError m => SchemeVal -> [SchemeVal] -> m SchemeVal
+apply (PrimitiveExpression fun) args = liftThrows $ fun args
+apply _ _ = undefined
+
+liftThrows :: MonadError e m => Either e a -> m a
+liftThrows (Right val) = return val
+liftThrows (Left err) = throwError err
