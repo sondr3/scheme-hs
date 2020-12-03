@@ -1,14 +1,22 @@
 module Scheme.Eval where
 
-import Control.Monad.Reader (Reader, ask, asks, runReader)
+import Control.Monad.Except (ExceptT, MonadError (throwError), runExceptT)
+import Control.Monad.Identity (runIdentity)
+import Control.Monad.Reader (ReaderT, ask, asks, runReaderT)
+import Data.Functor.Identity (Identity)
 import qualified Data.Map.Strict as Map
-import Scheme.Types (Environment, SchemeVal (..))
+import Scheme.Environment (buildEnvironment)
+import Scheme.Types (Environment, SchemeError (..), SchemeVal (..))
 
-evaluate :: SchemeVal -> SchemeVal
-evaluate vals = runReader (eval vals) Map.empty
+run :: SchemeVal -> Either SchemeError SchemeVal
+run sexp = evaluate buildEnvironment (eval sexp)
 
-eval :: SchemeVal -> Reader Environment SchemeVal
-eval val@(String _) = return val
+evaluate :: Environment -> Eval SchemeVal -> Either SchemeError SchemeVal
+evaluate env evl = runIdentity (runExceptT (runReaderT evl env))
+
+type Eval a = ReaderT Environment (ExceptT SchemeError Identity) a
+
+eval :: SchemeVal -> Eval SchemeVal
 eval val@(Character _) = return val
 eval val@(Integer _) = return val
 eval val@(Real _) = return val
