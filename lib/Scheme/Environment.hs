@@ -9,7 +9,7 @@ primitives :: [(Text, [SchemeVal] -> Either SchemeError SchemeVal)]
 primitives = numericPrimitives
 
 buildEnvironment :: Map.Map Text SchemeVal
-buildEnvironment = Map.fromAscList (map buildFunc primitives)
+buildEnvironment = Map.fromList (map buildFunc primitives)
 
 buildFunc :: (Text, [SchemeVal] -> Either SchemeError SchemeVal) -> (Text, SchemeVal)
 buildFunc (sym, func) = (sym, PrimitiveExpression func)
