@@ -1,5 +1,5 @@
 module Scheme.Primitives.Numbers
-  ( numberPrimitives,
+  ( numericPrimitives,
   )
 where
 
@@ -8,8 +8,8 @@ import Data.Foldable (foldlM)
 import Data.Text (Text)
 import Scheme.Types (SchemeError (..), SchemeVal (..), castNum)
 
-numberPrimitives :: [(Text, [SchemeVal] -> Either SchemeError SchemeVal)]
-numberPrimitives = [("+", add)]
+numericPrimitives :: [(Text, [SchemeVal] -> Either SchemeError SchemeVal)]
+numericPrimitives = [("+", add)]
 
 foldl1M :: Monad m => (a -> a -> m a) -> [a] -> m a
 foldl1M f (x : xs) = foldlM f x xs

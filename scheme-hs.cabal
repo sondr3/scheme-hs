@@ -60,12 +60,11 @@ library
   exposed-modules: Scheme
   other-modules:
     Scheme.Environment
-    Scheme.Parser
-    Scheme.Types
     Scheme.Eval
+    Scheme.Parser
     Scheme.Primitives
-
--- build-depends:   
+    Scheme.Primitives.Numbers
+    Scheme.Types
 
 executable scheme
   import:         config
