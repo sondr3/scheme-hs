@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 module Scheme.Primitives.Numbers
   ( numberPrimitives,
   )

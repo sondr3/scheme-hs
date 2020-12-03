@@ -28,6 +28,7 @@ flag dev
 common config
   default-language:   Haskell2010  
   default-extensions:
+    FlexibleContexts
     LambdaCase
     NamedFieldPuns
     OverloadedStrings
