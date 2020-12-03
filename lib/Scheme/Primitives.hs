@@ -1,6 +1,6 @@
 module Scheme.Primitives
-  ( module Scheme.Primitives.Numbers,
+  ( numericPrimitives,
   )
 where
 
-import Scheme.Primitives.Numbers
+import Scheme.Primitives.Numbers (numericPrimitives)
