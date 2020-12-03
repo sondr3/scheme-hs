@@ -10,7 +10,10 @@ evaluate vals = runReader (eval vals) Map.empty
 eval :: SchemeVal -> Reader Environment SchemeVal
 eval val@(String _) = return val
 eval val@(Character _) = return val
-eval val@(Number _) = return val
+eval val@(Integer _) = return val
+eval val@(Real _) = return val
+eval val@(Rational _) = return val
+eval val@(Complex _) = return val
 eval val@(Boolean _) = return val
 eval (Symbol s) = do
   e <- asks (Map.lookup s)

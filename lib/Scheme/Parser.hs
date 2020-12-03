@@ -11,7 +11,7 @@ import qualified Data.Text as T
 import Data.Text.Read (hexadecimal)
 import Data.Void (Void)
 import Data.Word (Word8)
-import Scheme.Types (Number (..), SchemeVal (..))
+import Scheme.Types (SchemeVal (..))
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -55,7 +55,7 @@ pDecimalInteger = chunk "#d" >> L.decimal
 pHexadecimalInteger :: Parser Integer
 pHexadecimalInteger = chunk "#x" >> L.hexadecimal
 
-integer :: Parser Number
+integer :: Parser SchemeVal
 integer =
   Integer
     <$> ( choice
@@ -71,10 +71,10 @@ integer =
 pReal :: Parser Double
 pReal = L.signed (return ()) L.float
 
-pDouble :: Parser Number
+pDouble :: Parser SchemeVal
 pDouble = Real <$> (pReal <?> "double")
 
-pRational :: Parser Number
+pRational :: Parser SchemeVal
 pRational = do
   numerator <- pInteger
   void (char '/')
@@ -82,7 +82,7 @@ pRational = do
   -- TODO: Fix error if denominator is 0
   return $ Rational (numerator % denominator)
 
-pComplex :: Parser Number
+pComplex :: Parser SchemeVal
 pComplex = do
   real <- pReal
   void (char '+')
@@ -91,7 +91,7 @@ pComplex = do
   return $ Complex (real :+ imag)
 
 number :: Parser SchemeVal
-number = Number <$> choice (map (try . lexeme) [pComplex, pRational, pDouble, integer])
+number = choice (map (try . lexeme) [pComplex, pRational, pDouble, integer])
 
 pSymbol :: Parser SchemeVal
 pSymbol = try $ do
