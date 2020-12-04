@@ -88,7 +88,7 @@ pRational = do
 
 pComplex :: Parser SchemeVal
 pComplex = do
-  real <- try pReal <|> pNan' <|> pInfinity'
+  real <- pNan' <|> pInfinity' <|> try pReal <|> (fromInteger <$> pInteger)
   void (char '+')
   imag <- try pReal <|> fromInteger <$> pInteger <|> read "NaN" <$ chunk "nan.0" <|> read "Infinity" <$ chunk "inf.0"
   void (char 'i')
