@@ -50,12 +50,15 @@ sub (f : fs) = foldlM (\a b -> castNum [a, b] >>= sub') f fs
     sub' (List [Complex x, Complex y]) = pure $ Complex (x - y)
     sub' _ = throwError $ Generic "Something went wrong"
 
--- TODO: Tomorrow
 division :: [SchemeVal] -> Either SchemeError SchemeVal
 division [] = throwError $ ArgumentMismatch 1 []
+division [Integer x] = pure $ Rational (1 / fromInteger x)
+division [Real x] = pure $ Real (1.0 / x)
+division [Rational x] = pure $ Rational (1 / x)
+division [Complex x] = pure $ Complex (1 / x)
 division (f : fs) = foldlM (\a b -> castNum [a, b] >>= division') f fs
   where
-    division' (List [Integer x, Integer y]) = pure $ Integer (x `div` y)
+    division' (List [Integer x, Integer y]) = pure $ Rational (fromInteger x / fromInteger y)
     division' (List [Real x, Real y]) = pure $ Real (x / y)
     division' (List [Rational x, Rational y]) = pure $ Rational (x / y)
     division' (List [Complex x, Complex y]) = pure $ Complex (x / y)
