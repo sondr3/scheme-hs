@@ -31,6 +31,21 @@ data SchemeVal
   | Procedure Environment SchemeVal [SchemeVal]
   deriving (Show)
 
+instance Eq SchemeVal where
+  (==) (List x) (List y) = length x == length y && all (uncurry (==)) (zip x y)
+  (==) (PairList xs x) (PairList ys y) = List (xs ++ [x]) == List (ys ++ [y])
+  (==) (Vector x) (Vector y) = x == y
+  (==) (Bytevector x) (Bytevector y) = x == y
+  (==) (String x) (String y) = x == y
+  (==) (Character x) (Character y) = x == y
+  (==) (Symbol x) (Symbol y) = x == y
+  (==) (Boolean x) (Boolean y) = x == y
+  (==) (Integer x) (Integer y) = x == y
+  (==) (Real x) (Real y) = x == y
+  (==) (Rational x) (Rational y) = x == y
+  (==) (Complex x) (Complex y) = x == y
+  (==) _ _ = False
+
 castNum :: [SchemeVal] -> Either SchemeError SchemeVal
 castNum [x@(Integer _), y@(Integer _)] = return $ List [x, y]
 castNum [x@(Real _), y@(Real _)] = return $ List [x, y]
