@@ -6,6 +6,7 @@ where
 import Control.Monad.Except (MonadError (throwError))
 import Data.Complex (imagPart, realPart)
 import Data.Foldable (foldlM)
+import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
 import Scheme.Operators (unaryOperator)
 import Scheme.Types (SchemeError (..), SchemeVal (..), castNum)
@@ -36,19 +37,30 @@ isNumber (Complex _) = Boolean True
 isNumber _ = Boolean False
 
 isComplex :: SchemeVal -> SchemeVal
+isComplex (Integer _) = Boolean True
+isComplex (Real _) = Boolean True
+isComplex (Rational _) = Boolean True
 isComplex (Complex _) = Boolean True
 isComplex _ = Boolean False
 
 isReal :: SchemeVal -> SchemeVal
 isReal (Real _) = Boolean True
+isReal (Rational _) = Boolean True
+isReal (Integer _) = Boolean True
+isReal (Complex x) = if imagPart x == 0 then Boolean True else Boolean False
 isReal _ = Boolean False
 
 isRational :: SchemeVal -> SchemeVal
 isRational (Rational _) = Boolean True
+isRational (Integer _) = Boolean True
+isRational (Real x) = Boolean (not $ isInfinite x)
 isRational _ = Boolean False
 
 isInteger :: SchemeVal -> SchemeVal
 isInteger (Integer _) = Boolean True
+isInteger (Real x) = Boolean (isDoubleInt x)
+isInteger (Rational x) = Boolean (numerator x >= denominator x && numerator x `mod` denominator x == 0)
+isInteger (Complex x) = Boolean (isDoubleInt (realPart x) && isDoubleInt (imagPart x))
 isInteger _ = Boolean False
 
 isExact :: SchemeVal -> SchemeVal
@@ -128,3 +140,6 @@ division (f : fs) = foldlM (\a b -> castNum [a, b] >>= division') f fs
     division' (List [Rational x, Rational y]) = pure $ Rational (x / y)
     division' (List [Complex x, Complex y]) = pure $ Complex (x / y)
     division' _ = throwError $ Generic "Something went wrong"
+
+isDoubleInt :: Double -> Bool
+isDoubleInt d = (ceiling d :: Integer) == (floor d :: Integer)
