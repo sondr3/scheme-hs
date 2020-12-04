@@ -16,7 +16,12 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
-type Parser = Parsec Void Text
+newtype ParserError = Unimplemented Text deriving (Show, Eq, Ord)
+
+instance ShowErrorComponent ParserError where
+  showErrorComponent (Unimplemented text) = T.unpack text <> " is not implemented"
+
+type Parser = Parsec ParserError Text
 
 sc :: Parser ()
 sc =
