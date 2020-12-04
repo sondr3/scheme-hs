@@ -23,6 +23,7 @@ numericPrimitives =
     ("exact-integer?", unaryOperator isExactInteger),
     ("finite?", unaryOperator isFinite),
     ("infinite?", unaryOperator isInfinite'),
+    ("nan?", unaryOperator isNaN'),
     ("+", add),
     ("-", sub),
     ("*", multiply),
@@ -92,6 +93,11 @@ isInfinite' (Complex x) = Boolean (isInfinite imag || isInfinite real || isNaN r
     imag = imagPart x
     real = realPart x
 isInfinite' _ = Boolean False
+
+isNaN' :: SchemeVal -> SchemeVal
+isNaN' (Real x) = Boolean (isNaN x)
+isNaN' (Complex x) = Boolean (isNaN (imagPart x) || isNaN (realPart x))
+isNaN' _ = Boolean False
 
 add :: [SchemeVal] -> Either SchemeError SchemeVal
 add [] = pure $ Integer 0
