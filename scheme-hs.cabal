@@ -61,6 +61,7 @@ library
   other-modules:
     Scheme.Environment
     Scheme.Eval
+    Scheme.Operators
     Scheme.Parser
     Scheme.Primitives
     Scheme.Primitives.Numbers
