@@ -84,14 +84,25 @@ pRational = do
 
 pComplex :: Parser SchemeVal
 pComplex = do
-  real <- pReal
+  real <- try pReal <|> pNan'
   void (char '+')
-  imag <- try (fromInteger <$> pInteger <|> pReal)
+  imag <- try pReal <|> fromInteger <$> pInteger <|> read "NaN" <$ chunk "nan.0"
   void (char 'i')
   return $ Complex (real :+ imag)
 
+pInfinity :: Parser SchemeVal
+pInfinity =
+  Real (read "Infinity") <$ chunk "+inf.0"
+    <|> Real (read "-Infinity") <$ chunk "-inf.0"
+
+pNan' :: Parser Double
+pNan' = read "NaN" <$ chunk "+nan.0"
+
+pNan :: Parser SchemeVal
+pNan = Real <$> pNan'
+
 number :: Parser SchemeVal
-number = choice (map (try . lexeme) [pComplex, pRational, pDouble, integer])
+number = choice (map (try . lexeme) [pComplex, pRational, pDouble, integer, pInfinity, pNan])
 
 pSymbol :: Parser SchemeVal
 pSymbol = try $ do
