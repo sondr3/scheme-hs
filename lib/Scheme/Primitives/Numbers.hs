@@ -21,6 +21,7 @@ numericPrimitives =
     ("inexact?", unaryOperator isInexact),
     ("exact-integer?", unaryOperator isExactInteger),
     ("finite?", unaryOperator isFinite),
+    ("infinite?", unaryOperator isInfinite'),
     ("+", add),
     ("-", sub),
     ("*", multiply),
@@ -65,12 +66,20 @@ isExactInteger x = case (isExact x, isInteger x) of
   _ -> Boolean False
 
 isFinite :: SchemeVal -> SchemeVal
-isFinite (Real x) = Boolean (not (Prelude.isInfinite x || isNaN x))
-isFinite (Complex x) = Boolean (not (Prelude.isInfinite imag || Prelude.isInfinite real || isNaN real || isNaN imag))
+isFinite (Real x) = Boolean (not (isInfinite x || isNaN x))
+isFinite (Complex x) = Boolean (not (isInfinite imag || isInfinite real || isNaN real || isNaN imag))
   where
     imag = imagPart x
     real = realPart x
 isFinite _ = Boolean True
+
+isInfinite' :: SchemeVal -> SchemeVal
+isInfinite' (Real x) = Boolean (isInfinite x || isNaN x)
+isInfinite' (Complex x) = Boolean (isInfinite imag || isInfinite real || isNaN real || isNaN imag)
+  where
+    imag = imagPart x
+    real = realPart x
+isInfinite' _ = Boolean False
 
 add :: [SchemeVal] -> Either SchemeError SchemeVal
 add [] = pure $ Integer 0
