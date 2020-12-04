@@ -9,7 +9,6 @@ import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Read (hexadecimal)
-import Data.Void (Void)
 import Data.Word (Word8)
 import Scheme.Types (SchemeVal (..))
 import Text.Megaparsec
@@ -106,8 +105,28 @@ pNan' = read "NaN" <$ chunk "+nan.0"
 pNan :: Parser SchemeVal
 pNan = Real <$> pNan'
 
+pExact :: Parser SchemeVal
+pExact = do
+  void (try $ chunk "#e")
+  num <- number
+  case num of
+    x@(Integer _) -> return x
+    x@(Rational _) -> return x
+    (Real x) -> return $ Rational (toRational x)
+    _ -> customFailure $ Unimplemented "Exactness for complex numbers"
+
+pInexact :: Parser SchemeVal
+pInexact = do
+  void (try $ chunk "#i")
+  num <- number
+  case num of
+    x@(Real _) -> return x
+    (Integer x) -> return $ Real (fromInteger x)
+    (Rational x) -> return $ Real (fromRational x)
+    _ -> customFailure $ Unimplemented "Exactness for complex numbers"
+
 number :: Parser SchemeVal
-number = choice (map (try . lexeme) [pComplex, pRational, pDouble, integer, pInfinity, pNan])
+number = choice (map (try . lexeme) [pComplex, pRational, pDouble, integer, pInfinity, pNan, pExact, pInexact])
 
 pSymbol :: Parser SchemeVal
 pSymbol = try $ do
