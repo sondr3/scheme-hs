@@ -3,7 +3,7 @@ module Scheme.Environment where
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import Scheme.Primitives (numericPrimitives)
-import Scheme.Types (SchemeError, SchemeVal (..))
+import Scheme.Types (SchemeError (..), SchemeVal (..))
 
 primitives :: [(Text, [SchemeVal] -> Either SchemeError SchemeVal)]
 primitives = numericPrimitives

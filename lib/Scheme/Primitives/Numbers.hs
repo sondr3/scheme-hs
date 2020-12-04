@@ -4,17 +4,73 @@ module Scheme.Primitives.Numbers
 where
 
 import Control.Monad.Except (MonadError (throwError))
+import Data.Complex (imagPart, realPart)
 import Data.Foldable (foldlM)
 import Data.Text (Text)
+import Scheme.Operators (unaryOperator)
 import Scheme.Types (SchemeError (..), SchemeVal (..), castNum)
 
 numericPrimitives :: [(Text, [SchemeVal] -> Either SchemeError SchemeVal)]
 numericPrimitives =
-  [ ("+", add),
+  [ ("number?", unaryOperator isNumber),
+    ("complex?", unaryOperator isComplex),
+    ("real?", unaryOperator isReal),
+    ("rational?", unaryOperator isRational),
+    ("integer?", unaryOperator isInteger),
+    ("exact?", unaryOperator isExact),
+    ("inexact?", unaryOperator isInexact),
+    ("exact-integer?", unaryOperator isExactInteger),
+    ("finite?", unaryOperator isFinite),
+    ("+", add),
     ("-", sub),
     ("*", multiply),
     ("/", division)
   ]
+
+isNumber :: SchemeVal -> SchemeVal
+isNumber (Integer _) = Boolean True
+isNumber (Real _) = Boolean True
+isNumber (Rational _) = Boolean True
+isNumber (Complex _) = Boolean True
+isNumber _ = Boolean False
+
+isComplex :: SchemeVal -> SchemeVal
+isComplex (Complex _) = Boolean True
+isComplex _ = Boolean False
+
+isReal :: SchemeVal -> SchemeVal
+isReal (Real _) = Boolean True
+isReal _ = Boolean False
+
+isRational :: SchemeVal -> SchemeVal
+isRational (Rational _) = Boolean True
+isRational _ = Boolean False
+
+isInteger :: SchemeVal -> SchemeVal
+isInteger (Integer _) = Boolean True
+isInteger _ = Boolean False
+
+isExact :: SchemeVal -> SchemeVal
+isExact (Integer _) = Boolean True
+isExact (Rational _) = Boolean True
+isExact _ = Boolean False
+
+isInexact :: SchemeVal -> SchemeVal
+isInexact (Real _) = Boolean True
+isInexact _ = Boolean False
+
+isExactInteger :: SchemeVal -> SchemeVal
+isExactInteger x = case (isExact x, isInteger x) of
+  (Boolean True, Boolean True) -> Boolean True
+  _ -> Boolean False
+
+isFinite :: SchemeVal -> SchemeVal
+isFinite (Real x) = Boolean (not (Prelude.isInfinite x || isNaN x))
+isFinite (Complex x) = Boolean (not (Prelude.isInfinite imag || Prelude.isInfinite real || isNaN real || isNaN imag))
+  where
+    imag = imagPart x
+    real = realPart x
+isFinite _ = Boolean True
 
 add :: [SchemeVal] -> Either SchemeError SchemeVal
 add [] = pure $ Integer 0
