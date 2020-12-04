@@ -88,16 +88,19 @@ pRational = do
 
 pComplex :: Parser SchemeVal
 pComplex = do
-  real <- try pReal <|> pNan'
+  real <- try pReal <|> pNan' <|> pInfinity'
   void (char '+')
-  imag <- try pReal <|> fromInteger <$> pInteger <|> read "NaN" <$ chunk "nan.0"
+  imag <- try pReal <|> fromInteger <$> pInteger <|> read "NaN" <$ chunk "nan.0" <|> read "Infinity" <$ chunk "inf.0"
   void (char 'i')
   return $ Complex (real :+ imag)
 
+pInfinity' :: Parser Double
+pInfinity' =
+  read "Infinity" <$ chunk "+inf.0"
+    <|> read "-Infinity" <$ chunk "-inf.0"
+
 pInfinity :: Parser SchemeVal
-pInfinity =
-  Real (read "Infinity") <$ chunk "+inf.0"
-    <|> Real (read "-Infinity") <$ chunk "-inf.0"
+pInfinity = Real <$> pInfinity'
 
 pNan' :: Parser Double
 pNan' = read "NaN" <$ chunk "+nan.0"
