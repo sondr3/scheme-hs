@@ -5,9 +5,10 @@ import Control.Monad.Identity (runIdentity)
 import Control.Monad.Reader (ReaderT, ask, asks, runReaderT)
 import Data.Functor.Identity (Identity)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Scheme.Environment (buildEnvironment)
+import Scheme.Environment (buildEnvironment, createNormalFunc, createVariadicFunc)
 import Scheme.Parser (pExpr)
 import Scheme.Types (Environment, SchemeError (..), SchemeVal (..), showError, showVal)
 import Text.Megaparsec (errorBundlePretty, runParser)
@@ -29,6 +30,9 @@ run sexp = evaluate buildEnvironment (eval sexp)
 
 evaluate :: Environment -> Eval SchemeVal -> Either SchemeError SchemeVal
 evaluate env evl = runIdentity (runExceptT (runReaderT evl env))
+
+eval' :: Environment -> SchemeVal -> Either SchemeError SchemeVal
+eval' env val = runIdentity (runExceptT (runReaderT (eval val) env))
 
 eval :: SchemeVal -> Eval SchemeVal
 eval val@(Character _) = return val
@@ -53,18 +57,30 @@ eval (List [Symbol "if", test, cons]) = do
     _ -> return Nil
 eval (List (Symbol "lambda" : List formals : body)) = do
   env <- ask
-  return $ Procedure env (List formals) body
-eval (List (Symbol "lambda" : Symbol formal : body)) = do
+  liftThrows (createNormalFunc formals body env)
+eval (List (Symbol "lambda" : PairList formals vararg : body)) = do
   env <- ask
-  return $ Procedure env (Symbol formal) body
-eval (List (fun : args)) = do
-  f <- eval fun
-  mapM eval args >>= apply f
-eval _ = undefined
+  liftThrows (createVariadicFunc vararg formals body env)
+eval (List (Symbol "lambda" : formal@(Symbol _) : body)) = do
+  env <- ask
+  liftThrows (createVariadicFunc formal [] body env)
+eval (List (fun : args)) = eval fun >>= \f -> mapM eval args >>= apply f
+eval xs = throwError (Generic $ "Unknown: " <> showVal xs)
 
 apply :: MonadError SchemeError m => SchemeVal -> [SchemeVal] -> m SchemeVal
-apply (PrimitiveExpression fun) args = liftThrows $ fun args
-apply _ _ = undefined
+apply (PrimitiveFunc fun) args = liftThrows $ fun args
+apply (Func _ params vararg body closure) args
+  | length params /= length args && isNothing vararg = throwError $ ArgumentMismatch (length params) args
+  | otherwise =
+    let env = bindVariadic vararg (updateEnv closure)
+     in liftThrows $ evalBody env
+  where
+    bindVariadic arg env = case arg of
+      Just a -> Map.union env (Map.fromList [(a, List $ drop (length params) args)])
+      Nothing -> env
+    updateEnv env = Map.union env (Map.fromList (zip params args))
+    evalBody env = last <$> mapM (eval' env) body
+apply fun args = throwError (Generic $ "Unknown function: " <> showVal fun <> " " <> T.concat (map showVal args))
 
 liftThrows :: MonadError e m => Either e a -> m a
 liftThrows (Right val) = return val
