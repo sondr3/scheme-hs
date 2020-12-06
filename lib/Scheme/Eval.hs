@@ -21,7 +21,7 @@ scheme input = case runParser pExpr "" input of
 
 execute :: SchemeVal -> Text
 execute input = case run input of
-  Right out -> T.pack $ showVal out
+  Right out -> showVal out
   Left err -> showError err
 
 run :: SchemeVal -> Either SchemeError SchemeVal

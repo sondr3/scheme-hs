@@ -61,27 +61,27 @@ castNum [x@(Rational _), Real y] = return $ List [x, Rational $ toRational y]
 castNum [Real x, y@(Rational _)] = return $ List [Rational $ toRational x, y]
 castNum x = throwError $ TypeMismatch "what" (head x)
 
-showVal :: SchemeVal -> String
-showVal (List (Symbol "quote" : xs)) = "'" <> unwords (map showVal xs)
-showVal (List (Symbol "quasiquote" : xs)) = "`" <> unwords (map showVal xs)
-showVal (List (Symbol "unquote" : xs)) = "," <> unwords (map showVal xs)
-showVal (List (Symbol "unquote-splicing" : xs)) = ",@" <> unwords (map showVal xs)
-showVal (List contents) = "(" <> unwords (map showVal contents) <> ")"
-showVal (PairList contents cdr) = "(" <> unwords (map showVal contents) <> " . " <> show cdr <> ")"
-showVal (Vector vec) = "#(" <> unwords (map show $ elems vec) <> ")"
-showVal (Bytevector vec) = "#u8(" <> unwords (map show $ BS.unpack vec) <> ")"
-showVal (String s) = show s
-showVal (Character a) = "#\\" <> [a]
-showVal (Symbol s) = T.unpack s
+showVal :: SchemeVal -> Text
+showVal (List (Symbol "quote" : xs)) = "'" <> T.unwords (map showVal xs)
+showVal (List (Symbol "quasiquote" : xs)) = "`" <> T.unwords (map showVal xs)
+showVal (List (Symbol "unquote" : xs)) = "," <> T.unwords (map showVal xs)
+showVal (List (Symbol "unquote-splicing" : xs)) = ",@" <> T.unwords (map showVal xs)
+showVal (List contents) = "(" <> T.unwords (map showVal contents) <> ")"
+showVal (PairList contents cdr) = "(" <> T.unwords (map showVal contents) <> " . " <> T.pack (show cdr) <> ")"
+showVal (Vector vec) = T.pack $ "#(" <> unwords (map show $ elems vec) <> ")"
+showVal (Bytevector vec) = T.pack $ "#u8(" <> unwords (map show $ BS.unpack vec) <> ")"
+showVal (String s) = s
+showVal (Character a) = T.pack $ "#\\" <> [a]
+showVal (Symbol s) = s
 showVal (Boolean True) = "#t"
 showVal (Boolean False) = "#f"
-showVal (Integer i) = show i
-showVal (Real d) = show d
-showVal (Rational r) = show (numerator r) <> "/" <> show (denominator r)
-showVal (Complex p) = show (realPart p) <> "+" <> show (imagPart p) <> "i"
+showVal (Integer i) = T.pack $show i
+showVal (Real d) = T.pack $show d
+showVal (Rational r) = T.pack $show (numerator r) <> "/" <> show (denominator r)
+showVal (Complex p) = T.pack $ show (realPart p) <> "+" <> show (imagPart p) <> "i"
 showVal Nil = "nil"
-showVal Procedure {} = "<λ>"
-showVal PrimitiveExpression {} = "<func>"
+showVal PrimitiveFunc {} = "<prim>"
+showVal Func {} = "<func>"
 
 dumpAST :: SchemeVal -> IO ()
 dumpAST = dumpAST' True
