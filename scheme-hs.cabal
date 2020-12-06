@@ -84,6 +84,7 @@ test-suite scheme-hs-test
   other-modules:
     Scheme.NumberSpec
     Scheme.ParserSpec
+    Scheme.ProcedureSpec
     Scheme.SchemeSpec
     Scheme.TestUtils
 
