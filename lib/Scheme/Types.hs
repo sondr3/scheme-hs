@@ -27,8 +27,16 @@ data SchemeVal
   | Rational Rational
   | Complex (Complex Double)
   | Nil
-  | PrimitiveExpression ([SchemeVal] -> Either SchemeError SchemeVal)
-  | Procedure Environment SchemeVal [SchemeVal]
+  | -- | Definition for primitive functions
+    PrimitiveFunc ([SchemeVal] -> Either SchemeError SchemeVal)
+  | -- | Definition for all other functions
+    Func
+      { macro :: Bool,
+        params :: [Text],
+        vararg :: Maybe Text,
+        body :: [SchemeVal],
+        closure :: Environment
+      }
   deriving (Show)
 
 instance Eq SchemeVal where
