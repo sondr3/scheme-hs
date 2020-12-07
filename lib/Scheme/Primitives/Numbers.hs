@@ -3,31 +3,31 @@ module Scheme.Primitives.Numbers
   )
 where
 
-import Control.Monad.Except (MonadError (throwError))
+import Control.Exception (throw)
 import Data.Complex (imagPart, realPart)
 import Data.Foldable (foldlM)
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
-import Scheme.Operators (unaryOperator)
-import Scheme.Types (SchemeError (..), SchemeVal (..), castNum)
+import Scheme.Operators (createFun, unaryOperator)
+import Scheme.Types (Eval, SchemeError (..), SchemeVal (..), castNum)
 
-numericPrimitives :: [(Text, [SchemeVal] -> Either SchemeError SchemeVal)]
+numericPrimitives :: [(Text, SchemeVal)]
 numericPrimitives =
-  [ ("number?", unaryOperator isNumber),
-    ("complex?", unaryOperator isComplex),
-    ("real?", unaryOperator isReal),
-    ("rational?", unaryOperator isRational),
-    ("integer?", unaryOperator isInteger),
-    ("exact?", unaryOperator isExact),
-    ("inexact?", unaryOperator isInexact),
-    ("exact-integer?", unaryOperator isExactInteger),
-    ("finite?", unaryOperator isFinite),
-    ("infinite?", unaryOperator isInfinite'),
-    ("nan?", unaryOperator isNaN'),
-    ("+", add),
-    ("-", sub),
-    ("*", multiply),
-    ("/", division)
+  [ ("number?", createFun $ unaryOperator isNumber),
+    ("complex?", createFun $ unaryOperator isComplex),
+    ("real?", createFun $ unaryOperator isReal),
+    ("rational?", createFun $ unaryOperator isRational),
+    ("integer?", createFun $ unaryOperator isInteger),
+    ("exact?", createFun $ unaryOperator isExact),
+    ("inexact?", createFun $ unaryOperator isInexact),
+    ("exact-integer?", createFun $ unaryOperator isExactInteger),
+    ("finite?", createFun $ unaryOperator isFinite),
+    ("infinite?", createFun $ unaryOperator isInfinite'),
+    ("nan?", createFun $ unaryOperator isNaN'),
+    ("+", createFun add),
+    ("-", createFun sub),
+    ("*", createFun multiply),
+    ("/", createFun division)
   ]
 
 isNumber :: SchemeVal -> SchemeVal
@@ -99,7 +99,7 @@ isNaN' (Real x) = Boolean (isNaN x)
 isNaN' (Complex x) = Boolean (isNaN (imagPart x) || isNaN (realPart x))
 isNaN' _ = Boolean False
 
-add :: [SchemeVal] -> Either SchemeError SchemeVal
+add :: [SchemeVal] -> Eval SchemeVal
 add [] = pure $ Integer 0
 add (f : fs) = foldlM (\a b -> castNum [a, b] >>= add') f fs
   where
@@ -107,9 +107,9 @@ add (f : fs) = foldlM (\a b -> castNum [a, b] >>= add') f fs
     add' (List [Real x, Real y]) = pure $ Real (x + y)
     add' (List [Rational x, Rational y]) = pure $ Rational (x + y)
     add' (List [Complex x, Complex y]) = pure $ Complex (x + y)
-    add' _ = throwError $ Generic "Something went wrong in (+)"
+    add' _ = throw $ Generic "Something went wrong in (+)"
 
-multiply :: [SchemeVal] -> Either SchemeError SchemeVal
+multiply :: [SchemeVal] -> Eval SchemeVal
 multiply [] = pure $ Integer 1
 multiply (f : fs) = foldlM (\a b -> castNum [a, b] >>= multiply') f fs
   where
@@ -117,10 +117,10 @@ multiply (f : fs) = foldlM (\a b -> castNum [a, b] >>= multiply') f fs
     multiply' (List [Real x, Real y]) = pure $ Real (x * y)
     multiply' (List [Rational x, Rational y]) = pure $ Rational (x * y)
     multiply' (List [Complex x, Complex y]) = pure $ Complex (x * y)
-    multiply' _ = throwError $ Generic "Something went wrong"
+    multiply' _ = throw $ Generic "Something went wrong"
 
-sub :: [SchemeVal] -> Either SchemeError SchemeVal
-sub [] = throwError $ ArgumentMismatch 1 []
+sub :: [SchemeVal] -> Eval SchemeVal
+sub [] = throw $ ArgumentLengthMismatch 1 []
 sub [Integer x] = pure $ Integer (negate x)
 sub [Real x] = pure $ Real (negate x)
 sub [Rational x] = pure $ Rational (negate x)
@@ -131,10 +131,10 @@ sub (f : fs) = foldlM (\a b -> castNum [a, b] >>= sub') f fs
     sub' (List [Real x, Real y]) = pure $ Real (x - y)
     sub' (List [Rational x, Rational y]) = pure $ Rational (x - y)
     sub' (List [Complex x, Complex y]) = pure $ Complex (x - y)
-    sub' _ = throwError $ Generic "Something went wrong"
+    sub' _ = throw $ Generic "Something went wrong"
 
-division :: [SchemeVal] -> Either SchemeError SchemeVal
-division [] = throwError $ ArgumentMismatch 1 []
+division :: [SchemeVal] -> Eval SchemeVal
+division [] = throw $ ArgumentLengthMismatch 1 []
 division [Integer x] = pure $ Rational (1 / fromInteger x)
 division [Real x] = pure $ Real (1.0 / x)
 division [Rational x] = pure $ Rational (1 / x)
@@ -145,7 +145,7 @@ division (f : fs) = foldlM (\a b -> castNum [a, b] >>= division') f fs
     division' (List [Real x, Real y]) = pure $ Real (x / y)
     division' (List [Rational x, Rational y]) = pure $ Rational (x / y)
     division' (List [Complex x, Complex y]) = pure $ Complex (x / y)
-    division' _ = throwError $ Generic "Something went wrong"
+    division' _ = throw $ Generic "Something went wrong"
 
 isDoubleInt :: Double -> Bool
 isDoubleInt d = (ceiling d :: Integer) == (floor d :: Integer)
