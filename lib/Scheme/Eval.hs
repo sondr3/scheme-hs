@@ -2,7 +2,7 @@ module Scheme.Eval where
 
 import Control.Monad.Except (ExceptT, MonadError (throwError), runExceptT)
 import Control.Monad.Identity (runIdentity)
-import Control.Monad.Reader (ReaderT, ask, asks, runReaderT)
+import Control.Monad.Reader (ReaderT, ask, asks, local, runReaderT)
 import Data.Functor.Identity (Identity)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (isNothing)
@@ -55,15 +55,29 @@ eval (List [Symbol "if", test, cons]) = do
   eval test >>= \case
     Boolean True -> eval cons
     _ -> return Nil
+
+-- Lambda function of the form (lambda (x y) (+ x y))
 eval (List (Symbol "lambda" : List formals : body)) = do
   env <- ask
   liftThrows (createNormalFunc formals body env)
+-- Lambda function of the form (lambda (x y . z) z)
 eval (List (Symbol "lambda" : PairList formals vararg : body)) = do
   env <- ask
   liftThrows (createVariadicFunc vararg formals body env)
+-- Lambda function of the form (lambda x x)
 eval (List (Symbol "lambda" : formal@(Symbol _) : body)) = do
   env <- ask
   liftThrows (createVariadicFunc formal [] body env)
+
+-- Definition of the form (define〈variable〉〈expression〉
+eval (List (Symbol "define" : var@(Symbol name) : expr)) = do
+  env <- ask
+  func <- liftThrows $ createVariadicFunc var [] expr env
+  undefined
+-- (define (〈variable〉 〈formals〉)〈body〉[]
+eval (List (Symbol "define" : List (Symbol variable : formals) : body)) = undefined
+-- (define (〈variable〉.〈formal〉)〈body〉)
+eval (List (Symbol "define" : PairList (Symbol variable : formals) vararg : body)) = undefined
 eval (List (fun : args)) = eval fun >>= \f -> mapM eval args >>= apply f
 eval xs = throwError (Generic $ "Unknown: " <> showVal xs)
 
