@@ -8,7 +8,7 @@ import Control.Monad.Reader (ask, asks, local, runReaderT)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
-import Scheme.Environment (buildEnvironment, getVariable)
+import Scheme.Environment (buildEnvironment, extractVariable, getVariable)
 import Scheme.Parser (parseFile, parseInput)
 import Scheme.Types (Environment, Eval, Function (..), SchemeError (..), SchemeVal (..), showError, showVal, unEval)
 
@@ -34,8 +34,8 @@ lineToEvalForm content = either (throw . ParserError . showError) eval $ parseIn
 fileToEvalForm :: FilePath -> Text -> Eval SchemeVal
 fileToEvalForm file content = either (throw . ParserError . showError) eval $ parseFile file content
 
-testParse :: Text -> Text
-testParse input = either (T.pack . show) (T.pack . show) $ parseInput input
+showParse :: Text -> Text
+showParse input = either showError showVal $ parseInput input
 
 runInEnv :: Environment -> Eval b -> IO b
 runInEnv code action = runReaderT (unEval action) code
@@ -43,6 +43,11 @@ runInEnv code action = runReaderT (unEval action) code
 ensureSymbol :: SchemeVal -> Eval SchemeVal
 ensureSymbol n@(Symbol _) = pure n
 ensureSymbol n = throw $ TypeMismatch "symbol" n
+
+bindArgsEval :: [SchemeVal] -> [SchemeVal] -> SchemeVal -> Eval SchemeVal
+bindArgsEval params args expr = do
+  env <- ask
+  local (const (Map.fromList (zipWith (\a b -> (extractVariable a, b)) params args) <> env)) $ eval expr
 
 eval :: SchemeVal -> Eval SchemeVal
 eval Nil = return Nil
@@ -72,19 +77,14 @@ eval (List [Symbol "define", var@(Symbol name), expr]) = do
 eval (List (Symbol "define" : List (Symbol variable : formals) : body)) = undefined
 -- (define (〈variable〉.〈formal〉)〈body〉)
 eval (List (Symbol "define" : PairList (Symbol variable : formals) vararg : body)) = undefined
--- -- Lambda function of the form (lambda (x y) (+ x y))
--- eval (List (Symbol "lambda" : List formals : body)) = do
---   env <- ask
---   liftThrows (createNormalFunc formals body env)
--- -- Lambda function of the form (lambda (x y . z) z)
--- eval (List (Symbol "lambda" : PairList formals vararg : body)) = do
---   env <- ask
---   liftThrows (createVariadicFunc vararg formals body env)
--- -- Lambda function of the form (lambda x x)
--- eval (List (Symbol "lambda" : formal@(Symbol _) : body)) = do
---   env <- ask
---   undefined
-
+-- Lambda function of the form (lambda (x y) (+ x y))
+eval (List [Symbol "lambda", List formals, body]) = asks (Lambda (Function $ applyLambda body formals))
+-- Lambda function of the form (lambda (x y . z) z)
+eval (List (Symbol "lambda" : PairList formals vararg : body)) = undefined
+-- asks (Lambda (Function $ applyLambda [] body))
+-- Lambda function of the form (lambda x x)
+eval (List [Symbol "lambda", formal@(Symbol _), body]) = asks (Lambda (Function $ applyLambda body []))
+-- Application of functions :D
 eval (List ((:) fun exprs)) = do
   func <- eval fun
   val <- mapM eval exprs
@@ -106,20 +106,8 @@ evalBody (List ((:) (List ((:) (Symbol "define") [Symbol var, defExpr])) rest)) 
    in local envFn $ evalBody $ List rest
 evalBody body = eval body
 
--- apply :: MonadError SchemeError m => SchemeVal -> [SchemeVal] -> m SchemeVal
--- apply (PrimitiveFunc fun) args = liftThrows $ fun args
--- apply (Func _ params vararg body closure) args
---   | length params /= length args && isNothing vararg = throwError $ ArgumentMismatch (length params) args
---   | otherwise =
---     let env = bindVariadic vararg (updateEnv closure)
---      in liftThrows $ evalBody env
---   where
---     bindVariadic arg env = case arg of
---       Just a -> Map.union env (Map.fromList [(a, List $ drop (length params) args)])
---       Nothing -> env
---     updateEnv env = Map.union env (Map.fromList (zip params args))
---     evalBody env = last <$> mapM (eval' env) body
--- apply fun args = throwError (Generic $ "Unknown function: " <> showVal fun <> " " <> T.concat (map showVal args))
+applyLambda :: SchemeVal -> [SchemeVal] -> [SchemeVal] -> Eval SchemeVal
+applyLambda expr params args = bindArgsEval params args expr
 
 liftThrows :: MonadError e m => Either e a -> m a
 liftThrows (Right val) = return val

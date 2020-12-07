@@ -20,3 +20,7 @@ getVariable (Symbol name) = do
     Just val -> return val
     Nothing -> throw $ UnboundSymbol name
 getVariable _ = throw $ Generic "Attempt to lookup variable with invalid type"
+
+extractVariable :: SchemeVal -> Text
+extractVariable (Symbol sym) = sym
+extractVariable _ = throw $ Generic "Expected symbol"

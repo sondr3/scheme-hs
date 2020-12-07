@@ -1,7 +1,8 @@
 module Scheme.TestUtils where
 
 import Data.Text (Text)
-import Scheme (SchemeVal, pExpr, run, showVal)
+import GHC.IO (unsafePerformIO)
+import Scheme (SchemeVal, buildEnvironment, lineToEvalForm, runInEnv, showVal)
 import Text.Megaparsec (ParseErrorBundle, Parsec, parse)
 
 -- | Test utility to run a parser on some input
@@ -10,16 +11,8 @@ testParse p = parse p ""
 
 -- | Run parser and return AST
 testRun :: Text -> SchemeVal
-testRun input = case parse pExpr "" input of
-  Right val -> case run val of
-    Right out -> out
-    Left _ -> error "Error"
-  Left _ -> error "Error"
+testRun input = unsafePerformIO $ runInEnv buildEnvironment (lineToEvalForm input)
 
 -- | Run parser and return output
 testRunOutput :: Text -> Text
-testRunOutput input = case parse pExpr "" input of
-  Right val -> case run val of
-    Right out -> showVal out
-    Left _ -> error "Error"
-  Left _ -> error "Error"
+testRunOutput input = showVal (testRun input)
