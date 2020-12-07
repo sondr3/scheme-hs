@@ -10,7 +10,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Read (hexadecimal)
 import Data.Word (Word8)
-import Scheme.Types (SchemeVal (..))
+import Scheme.Types (SchemeError (..), SchemeVal (..))
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -247,3 +247,14 @@ pExpr =
     <|> pUnquoteSplicing
     <|> pUnquote
     <?> "expression"
+
+parseExpr :: FilePath -> Text -> Either SchemeError SchemeVal
+parseExpr file input = case runParser pExpr file input of
+  Right out -> Right out
+  Left err -> Left $ ParserError (T.pack $ errorBundlePretty err)
+
+parseInput :: Text -> Either SchemeError SchemeVal
+parseInput = parseExpr "file"
+
+parseFile :: FilePath -> Text -> Either SchemeError SchemeVal
+parseFile = parseExpr
