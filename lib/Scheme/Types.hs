@@ -8,7 +8,7 @@ import Control.Exception (Exception, throw)
 import Control.Monad.Reader (MonadIO, MonadReader, ReaderT)
 import Data.Array (Array, elems)
 import qualified Data.ByteString as BS
-import Data.Complex (Complex, imagPart, realPart)
+import Data.Complex (Complex ((:+)), imagPart, realPart)
 import qualified Data.Map.Strict as Map
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
@@ -28,6 +28,109 @@ newtype Function = Function {fn :: [SchemeVal] -> Eval SchemeVal}
 instance Eq Function where
   (==) _ _ = False
 
+data Number
+  = Integer Integer
+  | Real Double
+  | Rational Rational
+  | Complex (Complex Double)
+  deriving (Show, Typeable, Eq)
+
+showNum :: Number -> Text
+showNum (Integer i) = T.pack $ show i
+showNum (Real d) = T.pack $ show d
+showNum (Rational r) = T.pack $ show (numerator r) <> "/" <> show (denominator r)
+showNum (Complex p) = T.pack $ show (realPart p) <> "+" <> show (imagPart p) <> "i"
+
+instance Num Number where
+  fromInteger x = Integer x
+
+  (Integer x) + (Integer y) = Integer (x + y)
+  (Integer x) + (Real y) = Real (fromInteger x + y)
+  (Integer x) + (Rational y) = Rational (fromInteger x + y)
+  (Integer x) + (Complex y) = Complex (fromInteger x + y)
+  (Real x) + (Integer y) = Real (x + fromInteger y)
+  (Rational x) + (Integer y) = Rational (x + fromInteger y)
+  (Complex x) + (Integer y) = Complex (x + fromInteger y)
+  (Real x) + (Real y) = Real (x + y)
+  (Real x) + (Rational y) = Rational (toRational x + y)
+  (Real x) + (Complex y) = Complex ((x :+ 0.0) + y)
+  (Rational x) + (Real y) = Rational (x + toRational y)
+  (Complex x) + (Real y) = Complex (x + (y :+ 0.0))
+  (Rational x) + (Rational y) = Rational (x + y)
+  (Complex x) + (Complex y) = Complex (x + y)
+  _ + _ = throw $ InvalidOperation "Cannot add rationals and complex numbers"
+
+  (Integer x) * (Integer y) = Integer (x * y)
+  (Integer x) * (Real y) = Real (fromInteger x * y)
+  (Integer x) * (Rational y) = Rational (fromInteger x * y)
+  (Integer x) * (Complex y) = Complex (fromInteger x * y)
+  (Real x) * (Integer y) = Real (x * fromInteger y)
+  (Rational x) * (Integer y) = Rational (x * fromInteger y)
+  (Complex x) * (Integer y) = Complex (x * fromInteger y)
+  (Real x) * (Real y) = Real (x * y)
+  (Real x) * (Rational y) = Rational (toRational x * y)
+  (Real x) * (Complex y) = Complex ((x :+ 0.0) * y)
+  (Rational x) * (Real y) = Rational (x * toRational y)
+  (Complex x) * (Real y) = Complex (x * (y :+ 0.0))
+  (Rational x) * (Rational y) = Rational (x * y)
+  (Complex x) * (Complex y) = Complex (x * y)
+  _ * _ = throw $ InvalidOperation "Cannot multiply rationals and complex numbers"
+
+  (Integer x) - (Integer y) = Integer (x - y)
+  (Integer x) - (Real y) = Real (fromInteger x - y)
+  (Integer x) - (Rational y) = Rational (fromInteger x - y)
+  (Integer x) - (Complex y) = Complex (fromInteger x - y)
+  (Real x) - (Integer y) = Real (x - fromInteger y)
+  (Rational x) - (Integer y) = Rational (x - fromInteger y)
+  (Complex x) - (Integer y) = Complex (x - fromInteger y)
+  (Real x) - (Real y) = Real (x - y)
+  (Real x) - (Rational y) = Rational (toRational x - y)
+  (Real x) - (Complex y) = Complex ((x :+ 0.0) - y)
+  (Rational x) - (Real y) = Rational (x - toRational y)
+  (Complex x) - (Real y) = Complex (x - (y :+ 0.0))
+  (Rational x) - (Rational y) = Rational (x - y)
+  (Complex x) - (Complex y) = Complex (x - y)
+  _ - _ = throw $ InvalidOperation "Cannot subtract rationals and complex numbers"
+
+  negate (Integer x) = Integer (negate x)
+  negate (Real x) = Real (negate x)
+  negate (Rational x) = Rational (negate x)
+  negate (Complex x) = Complex (negate x)
+
+  abs (Integer x) = Integer (abs x)
+  abs (Real x) = Real (abs x)
+  abs (Rational x) = Rational (abs x)
+  abs (Complex x) = Complex (abs x)
+
+  signum (Integer x) = Integer (signum x)
+  signum (Real x) = Real (signum x)
+  signum (Rational x) = Rational (signum x)
+  signum (Complex x) = Complex (signum x)
+
+instance Fractional Number where
+  fromRational x = Rational x
+
+  (Integer x) / (Integer y) = Rational (fromInteger x / fromInteger y)
+  (Integer x) / (Real y) = Real (fromInteger x / y)
+  (Integer x) / (Rational y) = Rational (fromInteger x / y)
+  (Integer x) / (Complex y) = Complex (fromInteger x / y)
+  (Real x) / (Integer y) = Real (x / fromInteger y)
+  (Rational x) / (Integer y) = Rational (x / fromInteger y)
+  (Complex x) / (Integer y) = Complex (x / fromInteger y)
+  (Real x) / (Real y) = Real (x / y)
+  (Real x) / (Rational y) = Rational (toRational x / y)
+  (Real x) / (Complex y) = Complex ((x :+ 0.0) / y)
+  (Rational x) / (Real y) = Rational (x / toRational y)
+  (Complex x) / (Real y) = Complex (x / (y :+ 0.0))
+  (Rational x) / (Rational y) = Rational (x / y)
+  (Complex x) / (Complex y) = Complex (x / y)
+  _ / _ = throw $ InvalidOperation "Cannot divide rationals and complex numbers"
+
+  recip (Integer x) = Real (recip $ fromInteger x)
+  recip (Real x) = Real (recip x)
+  recip (Rational x) = Rational (recip x)
+  recip (Complex x) = Complex (recip x)
+
 data SchemeVal
   = List [SchemeVal]
   | PairList [SchemeVal] SchemeVal
@@ -37,10 +140,7 @@ data SchemeVal
   | Character Char
   | Symbol Text
   | Boolean Bool
-  | Integer Integer
-  | Real Double
-  | Rational Rational
-  | Complex (Complex Double)
+  | Number Number
   | Nil
   | Lambda Function Environment
   | Fun Function
@@ -55,26 +155,8 @@ instance Eq SchemeVal where
   (==) (Character x) (Character y) = x == y
   (==) (Symbol x) (Symbol y) = x == y
   (==) (Boolean x) (Boolean y) = x == y
-  (==) (Integer x) (Integer y) = x == y
-  (==) (Real x) (Real y) = x == y
-  (==) (Rational x) (Rational y) = x == y
-  (==) (Complex x) (Complex y) = x == y
+  (==) (Number x) (Number y) = x == y
   (==) _ _ = False
-
-castNum :: [SchemeVal] -> Eval SchemeVal
-castNum [x@(Integer _), y@(Integer _)] = pure $ List [x, y]
-castNum [x@(Real _), y@(Real _)] = pure $ List [x, y]
-castNum [x@(Rational _), y@(Rational _)] = pure $ List [x, y]
-castNum [x@(Complex _), y@(Complex _)] = pure $ List [x, y]
-castNum [Integer x, y@(Real _)] = pure $ List [Real $ fromInteger x, y]
-castNum [x@(Real _), Integer y] = pure $ List [x, Real $ fromInteger y]
-castNum [Integer x, y@(Rational _)] = pure $ List [Rational $ fromInteger x, y]
-castNum [x@(Rational _), Integer y] = pure $ List [x, Rational $ fromInteger y]
-castNum [Integer x, y@(Complex _)] = pure $ List [Complex $ fromInteger x, y]
-castNum [x@(Complex _), Integer y] = pure $ List [x, Complex $ fromInteger y]
-castNum [x@(Rational _), Real y] = pure $ List [x, Rational $ toRational y]
-castNum [Real x, y@(Rational _)] = pure $ List [Rational $ toRational x, y]
-castNum x = throw $ TypeMismatch "what" (head x)
 
 unwordVals :: [SchemeVal] -> Text
 unwordVals xs = T.unwords $ showVal <$> xs
@@ -93,10 +175,7 @@ showVal (Character a) = T.pack $ "#\\" <> [a]
 showVal (Symbol s) = s
 showVal (Boolean True) = "#t"
 showVal (Boolean False) = "#f"
-showVal (Integer i) = T.pack $show i
-showVal (Real d) = T.pack $show d
-showVal (Rational r) = T.pack $show (numerator r) <> "/" <> show (denominator r)
-showVal (Complex p) = T.pack $ show (realPart p) <> "+" <> show (imagPart p) <> "i"
+showVal (Number n) = showNum n
 showVal Nil = "nil"
 showVal Fun {} = "<func>"
 showVal Lambda {} = "<lambda>"
@@ -115,6 +194,7 @@ data SchemeError
   | UnboundSymbol Text
   | ParserError Text
   | NotFunction SchemeVal
+  | InvalidOperation Text
   deriving (Show)
 
 instance Exception SchemeError
@@ -126,3 +206,4 @@ showError (UnboundSymbol sym) = "Unbound symbol: " <> sym
 showError (ArgumentLengthMismatch ex act) = "Expected " <> T.pack (show ex) <> " but found " <> T.pack (show $ length act)
 showError (ParserError err) = "Parsing error, could not parse input: " <> err
 showError (NotFunction err) = "Attempt at calling " <> showVal err <> " as a function"
+showError (InvalidOperation err) = "Invalid: " <> err
