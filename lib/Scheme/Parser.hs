@@ -10,7 +10,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Read (hexadecimal)
 import Data.Word (Word8)
-import Scheme.Types (SchemeError (..), SchemeVal (..))
+import Scheme.Types (Number (..), SchemeError (..), SchemeVal (..))
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -59,7 +59,7 @@ pDecimalInteger = chunk "#d" >> L.decimal
 pHexadecimalInteger :: Parser Integer
 pHexadecimalInteger = chunk "#x" >> L.hexadecimal
 
-integer :: Parser SchemeVal
+integer :: Parser Number
 integer =
   Integer
     <$> ( choice
@@ -75,10 +75,10 @@ integer =
 pReal :: Parser Double
 pReal = L.signed (return ()) L.float
 
-pDouble :: Parser SchemeVal
+pDouble :: Parser Number
 pDouble = Real <$> (pReal <?> "double")
 
-pRational :: Parser SchemeVal
+pRational :: Parser Number
 pRational = do
   numerator <- pInteger
   void (char '/')
@@ -86,7 +86,7 @@ pRational = do
   -- TODO: Fix error if denominator is 0
   return $ Rational (numerator % denominator)
 
-pComplex :: Parser SchemeVal
+pComplex :: Parser Number
 pComplex = do
   real <- pNan' <|> pInfinity' <|> try pReal <|> (fromInteger <$> pInteger)
   void (char '+')
@@ -99,37 +99,40 @@ pInfinity' =
   read "Infinity" <$ chunk "+inf.0"
     <|> read "-Infinity" <$ chunk "-inf.0"
 
-pInfinity :: Parser SchemeVal
+pInfinity :: Parser Number
 pInfinity = Real <$> pInfinity'
 
 pNan' :: Parser Double
 pNan' = read "NaN" <$ chunk "+nan.0"
 
-pNan :: Parser SchemeVal
+pNan :: Parser Number
 pNan = Real <$> pNan'
 
-pExact :: Parser SchemeVal
+pExact :: Parser Number
 pExact = do
   void (try $ chunk "#e")
-  num <- number
+  num <- number'
   case num of
     x@(Integer _) -> return x
     x@(Rational _) -> return x
     (Real x) -> return $ Rational (toRational x)
     _ -> customFailure $ Unimplemented "Exactness for complex numbers"
 
-pInexact :: Parser SchemeVal
+pInexact :: Parser Number
 pInexact = do
   void (try $ chunk "#i")
-  num <- number
+  num <- number'
   case num of
     x@(Real _) -> return x
     (Integer x) -> return $ Real (fromInteger x)
     (Rational x) -> return $ Real (fromRational x)
     _ -> customFailure $ Unimplemented "Exactness for complex numbers"
 
+number' :: Parser Number
+number' = choice (map (try . lexeme) [pComplex, pRational, pDouble, integer, pInfinity, pNan, pExact, pInexact])
+
 number :: Parser SchemeVal
-number = choice (map (try . lexeme) [pComplex, pRational, pDouble, integer, pInfinity, pNan, pExact, pInexact])
+number = Number <$> number'
 
 pSymbol :: Parser SchemeVal
 pSymbol = try $ do
