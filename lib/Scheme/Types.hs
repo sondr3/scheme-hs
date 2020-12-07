@@ -1,6 +1,11 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module Scheme.Types where
 
-import Control.Monad.Except (MonadError (throwError))
+import Control.Exception (Exception, throw)
+import Control.Monad.Reader (MonadIO, MonadReader, ReaderT)
 import Data.Array (Array, elems)
 import qualified Data.ByteString as BS
 import Data.Complex (Complex, imagPart, realPart)
@@ -8,10 +13,20 @@ import qualified Data.Map.Strict as Map
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Typeable (Typeable)
 import Text.Pretty.Simple (pPrint, pPrintLightBg)
 import Text.Show.Functions ()
 
 type Environment = Map.Map Text SchemeVal
+
+newtype Eval a = Eval {unEval :: ReaderT Environment IO a}
+  deriving (Monad, Functor, Applicative, MonadReader Environment, MonadIO)
+
+newtype Function = Function {fn :: [SchemeVal] -> Eval SchemeVal}
+  deriving (Typeable, Show)
+
+instance Eq Function where
+  (==) _ _ = False
 
 data SchemeVal
   = List [SchemeVal]
@@ -27,17 +42,9 @@ data SchemeVal
   | Rational Rational
   | Complex (Complex Double)
   | Nil
-  | -- | Definition for primitive functions
-    PrimitiveFunc ([SchemeVal] -> Either SchemeError SchemeVal)
-  | -- | Definition for all other functions
-    Func
-      { macro :: Bool,
-        params :: [Text],
-        vararg :: Maybe Text,
-        body :: [SchemeVal],
-        closure :: Environment
-      }
-  deriving (Show)
+  | Lambda Function Environment
+  | Fun Function
+  deriving (Show, Typeable)
 
 instance Eq SchemeVal where
   (==) (List x) (List y) = length x == length y && all (uncurry (==)) (zip x y)
@@ -54,28 +61,31 @@ instance Eq SchemeVal where
   (==) (Complex x) (Complex y) = x == y
   (==) _ _ = False
 
-castNum :: [SchemeVal] -> Either SchemeError SchemeVal
-castNum [x@(Integer _), y@(Integer _)] = return $ List [x, y]
-castNum [x@(Real _), y@(Real _)] = return $ List [x, y]
-castNum [x@(Rational _), y@(Rational _)] = return $ List [x, y]
-castNum [x@(Complex _), y@(Complex _)] = return $ List [x, y]
-castNum [Integer x, y@(Real _)] = return $ List [Real $ fromInteger x, y]
-castNum [x@(Real _), Integer y] = return $ List [x, Real $ fromInteger y]
-castNum [Integer x, y@(Rational _)] = return $ List [Rational $ fromInteger x, y]
-castNum [x@(Rational _), Integer y] = return $ List [x, Rational $ fromInteger y]
-castNum [Integer x, y@(Complex _)] = return $ List [Complex $ fromInteger x, y]
-castNum [x@(Complex _), Integer y] = return $ List [x, Complex $ fromInteger y]
-castNum [x@(Rational _), Real y] = return $ List [x, Rational $ toRational y]
-castNum [Real x, y@(Rational _)] = return $ List [Rational $ toRational x, y]
-castNum x = throwError $ TypeMismatch "what" (head x)
+castNum :: [SchemeVal] -> Eval SchemeVal
+castNum [x@(Integer _), y@(Integer _)] = pure $ List [x, y]
+castNum [x@(Real _), y@(Real _)] = pure $ List [x, y]
+castNum [x@(Rational _), y@(Rational _)] = pure $ List [x, y]
+castNum [x@(Complex _), y@(Complex _)] = pure $ List [x, y]
+castNum [Integer x, y@(Real _)] = pure $ List [Real $ fromInteger x, y]
+castNum [x@(Real _), Integer y] = pure $ List [x, Real $ fromInteger y]
+castNum [Integer x, y@(Rational _)] = pure $ List [Rational $ fromInteger x, y]
+castNum [x@(Rational _), Integer y] = pure $ List [x, Rational $ fromInteger y]
+castNum [Integer x, y@(Complex _)] = pure $ List [Complex $ fromInteger x, y]
+castNum [x@(Complex _), Integer y] = pure $ List [x, Complex $ fromInteger y]
+castNum [x@(Rational _), Real y] = pure $ List [x, Rational $ toRational y]
+castNum [Real x, y@(Rational _)] = pure $ List [Rational $ toRational x, y]
+castNum x = throw $ TypeMismatch "what" (head x)
+
+unwordVals :: [SchemeVal] -> Text
+unwordVals xs = T.unwords $ showVal <$> xs
 
 showVal :: SchemeVal -> Text
-showVal (List (Symbol "quote" : xs)) = "'" <> T.unwords (map showVal xs)
-showVal (List (Symbol "quasiquote" : xs)) = "`" <> T.unwords (map showVal xs)
-showVal (List (Symbol "unquote" : xs)) = "," <> T.unwords (map showVal xs)
-showVal (List (Symbol "unquote-splicing" : xs)) = ",@" <> T.unwords (map showVal xs)
-showVal (List contents) = "(" <> T.unwords (map showVal contents) <> ")"
-showVal (PairList contents cdr) = "(" <> T.unwords (map showVal contents) <> " . " <> T.pack (show cdr) <> ")"
+showVal (List (Symbol "quote" : xs)) = "'" <> unwordVals xs
+showVal (List (Symbol "quasiquote" : xs)) = "`" <> unwordVals xs
+showVal (List (Symbol "unquote" : xs)) = "," <> unwordVals xs
+showVal (List (Symbol "unquote-splicing" : xs)) = ",@" <> unwordVals xs
+showVal (List contents) = "(" <> unwordVals contents <> ")"
+showVal (PairList contents cdr) = "(" <> unwordVals contents <> " . " <> T.pack (show cdr) <> ")"
 showVal (Vector vec) = T.pack $ "#(" <> unwords (map show $ elems vec) <> ")"
 showVal (Bytevector vec) = T.pack $ "#u8(" <> unwords (map show $ BS.unpack vec) <> ")"
 showVal (String s) = s
@@ -88,8 +98,8 @@ showVal (Real d) = T.pack $show d
 showVal (Rational r) = T.pack $show (numerator r) <> "/" <> show (denominator r)
 showVal (Complex p) = T.pack $ show (realPart p) <> "+" <> show (imagPart p) <> "i"
 showVal Nil = "nil"
-showVal PrimitiveFunc {} = "<prim>"
-showVal Func {} = "<func>"
+showVal Fun {} = "<func>"
+showVal Lambda {} = "<lambda>"
 
 dumpAST :: SchemeVal -> IO ()
 dumpAST = dumpAST' True
@@ -100,13 +110,19 @@ dumpAST' False = pPrintLightBg
 
 data SchemeError
   = Generic Text
-  | ArgumentMismatch Int [SchemeVal]
+  | ArgumentLengthMismatch Int [SchemeVal]
   | TypeMismatch Text SchemeVal
   | UnboundSymbol Text
+  | ParserError Text
+  | NotFunction SchemeVal
   deriving (Show)
+
+instance Exception SchemeError
 
 showError :: SchemeError -> Text
 showError (TypeMismatch err vap) = "Invalid type: expected " <> err <> ", but found " <> T.pack (show vap)
 showError (Generic err) = "Unexpectec error: " <> err
 showError (UnboundSymbol sym) = "Unbound symbol: " <> sym
-showError (ArgumentMismatch ex act) = "Expected " <> T.pack (show ex) <> " but found " <> T.pack (show $ length act)
+showError (ArgumentLengthMismatch ex act) = "Expected " <> T.pack (show ex) <> " but found " <> T.pack (show $ length act)
+showError (ParserError err) = "Parsing error, could not parse input: " <> err
+showError (NotFunction err) = "Attempt at calling " <> showVal err <> " as a function"
