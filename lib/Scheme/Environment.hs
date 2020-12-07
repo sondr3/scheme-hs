@@ -1,45 +1,22 @@
 module Scheme.Environment where
 
+import Control.Exception (throw)
+import Control.Monad.Reader (MonadReader (ask))
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import Scheme.Primitives (numericPrimitives)
-import Scheme.Types (Environment, SchemeError (..), SchemeVal (..), showVal)
+import Scheme.Types (Eval, SchemeError (..), SchemeVal (..))
 
-primitives :: [(Text, [SchemeVal] -> Either SchemeError SchemeVal)]
+primitives :: [(Text, SchemeVal)]
 primitives = numericPrimitives
 
 buildEnvironment :: Map.Map Text SchemeVal
-buildEnvironment = Map.fromList (map createPrimFunc primitives)
+buildEnvironment = Map.fromList primitives
 
-createPrimFunc :: (Text, [SchemeVal] -> Either SchemeError SchemeVal) -> (Text, SchemeVal)
-createPrimFunc (sym, func) = (sym, PrimitiveFunc func)
-
-createFunc ::
-  -- | Macro?
-  Bool ->
-  -- | Variadics
-  Maybe Text ->
-  -- | Parameters
-  [SchemeVal] ->
-  -- | Body
-  [SchemeVal] ->
-  -- | Environment closure
-  Environment ->
-  -- | Resulting function
-  Either SchemeError SchemeVal
-createFunc macro varargs params body env = pure $ Func macro (map showVal params) varargs body env
-
-createNormalFunc ::
-  -- | Parameters
-  [SchemeVal] ->
-  -- | Body
-  [SchemeVal] ->
-  Environment ->
-  Either SchemeError SchemeVal
-createNormalFunc = createFunc False Nothing
-
-createVariadicFunc :: SchemeVal -> [SchemeVal] -> [SchemeVal] -> Environment -> Either SchemeError SchemeVal
-createVariadicFunc = createFunc False . Just . showVal
-
-createMacro :: [SchemeVal] -> [SchemeVal] -> Environment -> Either SchemeError SchemeVal
-createMacro = createFunc True Nothing
+getVariable :: SchemeVal -> Eval SchemeVal
+getVariable (Symbol name) = do
+  env <- ask
+  case Map.lookup name env of
+    Just val -> return val
+    Nothing -> throw $ UnboundSymbol name
+getVariable _ = throw $ Generic "Attempt to lookup variable with invalid type"
