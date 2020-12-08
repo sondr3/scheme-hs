@@ -4,10 +4,11 @@ module Scheme.Eval where
 
 import Control.Exception (throw)
 import Control.Monad.Except (MonadError, runExceptT, throwError)
-import Control.Monad.Reader (ask, local, runReaderT)
+import Control.Monad.Reader (ask, asks, local, runReaderT)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (isNothing)
 import Data.Text (Text)
-import Scheme.Environment (buildEnvironment)
+import Scheme.Environment (bindVariables, buildEnvironment, createNormalFun, createVariadicFun)
 import Scheme.Parser (parseInput)
 import Scheme.Types (Env, SchemeError (..), SchemeM, SchemeVal (..), showError, showVal, unScheme)
 
@@ -50,21 +51,35 @@ eval (List (Symbol "define" : List (Symbol variable : formals) : body)) = undefi
 -- (define (〈variable〉.〈formal〉)〈body〉)
 eval (List (Symbol "define" : PairList (Symbol variable : formals) vararg : body)) = undefined
 -- Lambda function of the form (lambda (x y) (+ x y))
-eval (List [Symbol "lambda", List formals, body]) = undefined
+eval (List (Symbol "lambda" : List formals : body)) = asks (createNormalFun formals body)
 -- Lambda function of the form (lambda (x y . z) z)
-eval (List (Symbol "lambda" : PairList formals vararg : body)) = undefined
+eval (List (Symbol "lambda" : PairList formals vararg : body)) = asks (createVariadicFun vararg formals body)
 -- asks (Lambda (Function $ applyLambda [] body))
 -- Lambda function of the form (lambda x x)
-eval (List [Symbol "lambda", formal@(Symbol _), body]) = undefined
+eval (List (Symbol "lambda" : formal@(Symbol _) : body)) = asks (createVariadicFun formal [] body)
 -- Application of functions :D
-eval (List ((:) fun exprs)) = do
-  func <- eval fun
-  val <- mapM eval exprs
-  case func of
-    (Primitive fn) -> fn val
-    -- (Fun {}) -> local (const closure) $ fn val
-    _ -> throw $ NotFunction func
+eval (List (fun : exprs)) = eval fun >>= \fn -> evalMany exprs >>= apply fn
 eval xs = throw (Generic $ "Unknown: " <> showVal xs)
+
+evalMany :: [SchemeVal] -> SchemeM [SchemeVal]
+evalMany = traverse eval
+
+evalBody' :: [SchemeVal] -> SchemeM SchemeVal
+evalBody' body = last <$> evalMany body
+
+apply :: SchemeVal -> [SchemeVal] -> SchemeM SchemeVal
+apply (Primitive fn) args = fn args
+apply (Fun _ params vararg body closure) args
+  | length params /= length args && isNothing vararg = throw $ ArgumentLengthMismatch (length params) args
+  | otherwise = do
+    let vars = bindVariables closure $ zip params args
+        env = bindVararg vararg vars
+     in local (const env) $ evalBody' body
+  where
+    bindVararg arg env = case arg of
+      Just arg' -> bindVariables env [(arg', List $ drop (length params) args)]
+      Nothing -> env
+apply fn _ = throw $ NotFunction fn
 
 evalBody :: SchemeVal -> SchemeM SchemeVal
 evalBody (List [List ((:) (Symbol "define") [Symbol var, defExpr]), rest]) = do

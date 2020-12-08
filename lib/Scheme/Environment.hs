@@ -45,3 +45,6 @@ createVariadicFun = createFun False . Just . showVal
 
 createMacro :: [SchemeVal] -> [SchemeVal] -> Env -> SchemeVal
 createMacro = createFun True Nothing
+
+bindVariables :: Env -> [(Text, SchemeVal)] -> Env
+bindVariables old closure = Map.union old (Map.fromList closure)
