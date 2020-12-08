@@ -3,7 +3,7 @@
 module Scheme.Eval where
 
 import Control.Exception (throw)
-import Control.Monad.Except (MonadError, runExceptT, throwError)
+import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (ask, asks, local, runReaderT)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (isNothing)
@@ -80,19 +80,3 @@ apply (Fun _ params vararg body closure) args
       Just arg' -> bindVariables env [(arg', List $ drop (length params) args)]
       Nothing -> env
 apply fn _ = throw $ NotFunction fn
-
-evalBody :: SchemeVal -> SchemeM SchemeVal
-evalBody (List [List ((:) (Symbol "define") [Symbol var, defExpr]), rest]) = do
-  val <- eval defExpr
-  env <- ask
-  local (const $ Map.insert var val env) $ eval rest
-evalBody (List ((:) (List ((:) (Symbol "define") [Symbol var, defExpr])) rest)) = do
-  val <- eval defExpr
-  env <- ask
-  let envFn = const $ Map.insert var val env
-   in local envFn $ evalBody $ List rest
-evalBody body = eval body
-
-liftThrows :: MonadError e m => Either e a -> m a
-liftThrows (Right val) = return val
-liftThrows (Left err) = throwError err
