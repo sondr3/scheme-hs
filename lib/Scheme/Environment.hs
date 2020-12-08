@@ -1,26 +1,47 @@
 module Scheme.Environment where
 
-import Control.Exception (throw)
-import Control.Monad.Reader (MonadReader (ask))
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import Scheme.Primitives (numericPrimitives)
-import Scheme.Types (Eval, SchemeError (..), SchemeVal (..))
+import Scheme.Types (Env, SchemeError (..), SchemeM, SchemeVal (..), showVal)
 
-primitives :: [(Text, SchemeVal)]
+primitives :: [(Text, [SchemeVal] -> SchemeM SchemeVal)]
 primitives = numericPrimitives
 
 buildEnvironment :: Map.Map Text SchemeVal
-buildEnvironment = Map.fromList primitives
+buildEnvironment = Map.fromList (map createPrimFunc primitives)
 
-getVariable :: SchemeVal -> Eval SchemeVal
-getVariable (Symbol name) = do
-  env <- ask
-  case Map.lookup name env of
-    Just val -> return val
-    Nothing -> throw $ UnboundSymbol name
-getVariable _ = throw $ Generic "Attempt to lookup variable with invalid type"
+-- createPrimFunc :: (Text, [SchemeVal] -> Either SchemeError SchemeVal) -> (Text, SchemeVal)
+-- createPrimFunc :: (a, [SchemeVal] -> Either SchemeError SchemeVal) -> (a, SchemeVal)
+createPrimFunc :: (a, [SchemeVal] -> SchemeM SchemeVal) -> (a, SchemeVal)
+createPrimFunc (sym, func) = (sym, Primitive func)
 
-extractVariable :: SchemeVal -> Text
-extractVariable (Symbol sym) = sym
-extractVariable _ = throw $ Generic "Expected symbol"
+createFunc ::
+  -- | Macro?
+  Bool ->
+  -- | Variadics
+  Maybe Text ->
+  -- | Parameters
+  [SchemeVal] ->
+  -- | Body
+  [SchemeVal] ->
+  -- | Environment closure
+  Env ->
+  -- | Resulting function
+  Either SchemeError SchemeVal
+createFunc macro varargs params body env = pure $ Fun macro (map showVal params) varargs body env
+
+createNormalFunc ::
+  -- | Parameters
+  [SchemeVal] ->
+  -- | Body
+  [SchemeVal] ->
+  Env ->
+  Either SchemeError SchemeVal
+createNormalFunc = createFunc False Nothing
+
+createVariadicFunc :: SchemeVal -> [SchemeVal] -> [SchemeVal] -> Env -> Either SchemeError SchemeVal
+createVariadicFunc = createFunc False . Just . showVal
+
+createMacro :: [SchemeVal] -> [SchemeVal] -> Env -> Either SchemeError SchemeVal
+createMacro = createFunc True Nothing
