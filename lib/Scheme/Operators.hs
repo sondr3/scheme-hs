@@ -1,14 +1,11 @@
 module Scheme.Operators where
 
 import Control.Exception (throw)
-import Scheme.Types (Eval, Function (..), SchemeError (..), SchemeVal (..))
+import Scheme.Types (SchemeError (..), SchemeVal (..))
 
-type Unary = SchemeVal -> Eval SchemeVal
+type Unary = SchemeVal -> SchemeVal
 
-type Binary = SchemeVal -> SchemeVal -> Eval SchemeVal
-
-createFun :: ([SchemeVal] -> Eval SchemeVal) -> SchemeVal
-createFun = Fun . Function
+type Binary = SchemeVal -> SchemeVal -> SchemeVal
 
 -- | Simple alias for unary functions
 unOp :: Applicative f => (t -> a) -> [t] -> f a
