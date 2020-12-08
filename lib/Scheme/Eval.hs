@@ -3,83 +3,82 @@
 module Scheme.Eval where
 
 import Control.Exception (throw)
-import Control.Monad.Except (runExceptT)
-import Control.Monad.Reader (ask, asks, local, runReaderT)
-import qualified Data.Map.Strict as Map
+import Control.Monad (liftM, when)
+import Control.Monad.Cont (MonadIO (liftIO))
+import Control.Monad.Except (MonadError, runExceptT, throwError)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
-import Scheme.Environment (bindVariables, buildEnvironment, createNormalFun, createVariadicFun)
+import Scheme.Environment (bindVariables, buildEnvironment, createNormalFun, createVariadicFun, defineVariable, getVariable)
 import Scheme.Parser (parseInput)
-import Scheme.Types (Env, SchemeError (..), SchemeM, SchemeVal (..), showError, showVal, unScheme)
+import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeVal (..), showError, showVal)
 
 evalLine :: Text -> IO ()
-evalLine input = runWithEnv buildEnvironment (lineToSchemeM input) >>= print
+evalLine input = do
+  env <- buildEnvironment
+  runWithEnv env (evalLineForm input) >>= print
 
-lineToSchemeM :: Text -> SchemeM SchemeVal
-lineToSchemeM input = either (throw . ParserError . showError) eval $ parseInput input
+evalLineForm :: Text -> SchemeVal
+evalLineForm input = case parseInput input of
+  Right val -> val
+  Left err -> throw $ ParserError (showError err)
 
-runWithEnv :: Env -> SchemeM a -> IO (Either SchemeError a)
-runWithEnv env expr = runExceptT (runReaderT (unScheme expr) env)
+runWithEnv :: Env -> SchemeVal -> IO (Either SchemeError SchemeVal)
+runWithEnv env expr = runExceptT (eval env expr)
 
-eval :: SchemeVal -> SchemeM SchemeVal
-eval Nil = return Nil
-eval (List []) = return Nil
-eval val@(Character _) = return val
-eval val@(Number _) = return val
-eval val@(Boolean _) = return val
-eval (Symbol sym) = do
-  env <- ask
-  case Map.lookup sym env of
-    Just x -> return x
-    Nothing -> throw $ UnboundSymbol sym
-eval (List [Symbol "quote", xs]) = return xs
-eval (List [Symbol "if", test, cons, alt]) = do
-  eval test >>= \case
-    Boolean True -> eval cons
-    _ -> eval alt
-eval (List [Symbol "if", test, cons]) = do
-  eval test >>= \case
-    Boolean True -> eval cons
+liftThrows :: MonadError e m => Either e a -> m a
+liftThrows (Right v) = return v
+liftThrows (Left err) = throwError err
+
+eval :: Env -> SchemeVal -> IOSchemeResult SchemeVal
+eval _ Nil = return Nil
+eval _ (List []) = return Nil
+eval _ val@(Character _) = return val
+eval _ val@(Number _) = return val
+eval _ val@(Boolean _) = return val
+eval env (Symbol sym) = getVariable sym env
+eval _ (List [Symbol "quote", xs]) = return xs
+eval env (List [Symbol "if", test, cons, alt]) = do
+  eval env test >>= \case
+    Boolean True -> eval env cons
+    _ -> eval env alt
+eval env (List [Symbol "if", test, cons]) = do
+  eval env test >>= \case
+    Boolean True -> eval env cons
     _ -> return Nil
 -- Definition of the form (define〈variable〉〈expression〉
-eval (List [Symbol "define", var@(Symbol name), expr]) = do
-  env <- ask
-  val <- eval expr
-  local (const (Map.insert name val env)) (pure var)
+eval env (List (Symbol "define" : formal@(Symbol sym) : expr)) =
+  isReserved sym >> createVariadicFun formal [] expr env >>= defineVariable env sym
 -- (define (〈variable〉 〈formals〉)〈body〉[]
-eval (List (Symbol "define" : List (Symbol variable : formals) : body)) = undefined
+eval env (List (Symbol "define" : List (Symbol sym : formals) : body)) =
+  isReserved sym >> createNormalFun formals body env >>= defineVariable env sym
 -- (define (〈variable〉.〈formal〉)〈body〉)
-eval (List (Symbol "define" : PairList (Symbol variable : formals) vararg : body)) = undefined
+eval env (List (Symbol "define" : PairList (Symbol sym : formals) vararg : body)) =
+  isReserved sym >> createVariadicFun vararg formals body env >>= defineVariable env sym
 -- Lambda function of the form (lambda (x y) (+ x y))
-eval (List (Symbol "lambda" : List formals : body)) = asks (createNormalFun formals body)
+eval env (List (Symbol "lambda" : List formals : body)) = createNormalFun formals body env
 -- Lambda function of the form (lambda (x y . z) z)
-eval (List (Symbol "lambda" : PairList formals vararg : body)) = asks (createVariadicFun vararg formals body)
--- asks (Lambda (Function $ applyLambda [] body))
+eval env (List (Symbol "lambda" : PairList formals vararg : body)) = createVariadicFun vararg formals body env
 -- Lambda function of the form (lambda x x)
-eval (List (Symbol "lambda" : formal@(Symbol _) : body)) = asks (createVariadicFun formal [] body)
+eval env (List (Symbol "lambda" : formal@(Symbol _) : body)) = createVariadicFun formal [] body env
 -- Application of functions :D
-eval (List (fun : exprs)) = eval fun >>= \fn -> evalMany exprs >>= apply fn
-eval xs = throw (Generic $ "Unknown: " <> showVal xs)
+eval env (List (fun : exprs)) = do
+  func <- eval env fun
+  case func of
+    Fun Fn {macro = True} -> apply func exprs >>= eval env
+    _ -> mapM (eval env) exprs >>= apply func
+eval _ xs = throw (Generic $ "Unknown: " <> showVal xs)
 
-evalMany :: [SchemeVal] -> SchemeM [SchemeVal]
-evalMany = traverse eval
-
-evalBody' :: [SchemeVal] -> SchemeM SchemeVal
-evalBody' body = last <$> evalMany body
-
-apply :: SchemeVal -> [SchemeVal] -> SchemeM SchemeVal
-apply (Primitive fn) args = fn args
-apply (Fun _ params vararg body closure) args
+apply :: SchemeVal -> [SchemeVal] -> IOSchemeResult SchemeVal
+apply (Primitive fn) args = liftThrows $ fn args
+apply (Fun (Fn _ params vararg body closure)) args
   | length params /= length args && isNothing vararg = throw $ ArgumentLengthMismatch (length params) args
-  | otherwise = do
-    let vars = bindVariables closure $ zip params args
-        env = bindVararg vararg vars
-     in local (const env) $ evalBody' body
+  | otherwise = liftIO (bindVariables closure $ zip params args) >>= bindVararg vararg >>= evalBody
   where
+    evalBody env = last <$> mapM (eval env) body
     bindVararg arg env = case arg of
-      Just arg' -> bindVariables env [(arg', List $ drop (length params) args)]
-      Nothing -> env
-apply fn _ = throw $ NotFunction fn
+      Just arg' -> liftIO $ bindVariables env [(arg', List $ drop (length params) args)]
+      Nothing -> return env
+apply fn _ = throwError $ NotFunction fn
 
 isReserved :: Text -> IOSchemeResult ()
 isReserved name = when (name `elem` ["define", "lambda", "if"]) $ throw $ ReservedName name
