@@ -6,11 +6,10 @@ module Scheme.Types where
 
 import Control.Exception (Exception, throw)
 import Control.Monad.Except (ExceptT)
-import Control.Monad.Reader (MonadIO, MonadReader, ReaderT)
 import Data.Array (Array, elems)
 import qualified Data.ByteString as BS
 import Data.Complex (Complex ((:+)), imagPart, realPart)
-import qualified Data.Map.Strict as Map
+import Data.IORef (IORef)
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -18,10 +17,11 @@ import Data.Typeable (Typeable)
 import Text.Pretty.Simple (pPrint, pPrintLightBg)
 import Text.Show.Functions ()
 
-type Env = Map.Map Text SchemeVal
+type Env = IORef [(Text, IORef SchemeVal)]
 
-newtype SchemeM a = SchemeM {unScheme :: ReaderT Env (ExceptT SchemeError IO) a}
-  deriving (Monad, Functor, Applicative, MonadReader Env, MonadIO)
+type SchemeResult = Either SchemeError
+
+type IOSchemeResult = ExceptT SchemeError IO
 
 data Number
   = Integer Integer
@@ -126,6 +126,11 @@ instance Fractional Number where
   recip (Rational x) = Rational (recip x)
   recip (Complex x) = Complex (recip x)
 
+data Fn = Fn {macro :: Bool, params :: [Text], vararg :: Maybe Text, body :: [SchemeVal], closure :: Env}
+
+instance Show Fn where
+  show _ = "<fn>"
+
 data SchemeVal
   = List [SchemeVal]
   | PairList [SchemeVal] SchemeVal
@@ -137,8 +142,8 @@ data SchemeVal
   | Boolean Bool
   | Number Number
   | Nil
-  | Primitive ([SchemeVal] -> SchemeM SchemeVal)
-  | Fun {macro :: Bool, params :: [Text], vararg :: Maybe Text, body :: [SchemeVal], closure :: Env}
+  | Primitive ([SchemeVal] -> SchemeResult SchemeVal)
+  | Fun Fn
   deriving (Show, Typeable)
 
 instance Eq SchemeVal where
