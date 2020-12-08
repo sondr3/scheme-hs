@@ -142,8 +142,8 @@ data SchemeVal
   | Boolean Bool
   | Number Number
   | Nil
-  | Lambda Function Environment
-  | Fun Function
+  | Primitive ([SchemeVal] -> SchemeM SchemeVal)
+  | Fun {macro :: Bool, params :: [Text], vararg :: Maybe Text, body :: [SchemeVal], closure :: Env}
   deriving (Show, Typeable)
 
 instance Eq SchemeVal where
