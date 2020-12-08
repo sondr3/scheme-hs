@@ -5,6 +5,7 @@
 module Scheme.Types where
 
 import Control.Exception (Exception, throw)
+import Control.Monad.Except (ExceptT)
 import Control.Monad.Reader (MonadIO, MonadReader, ReaderT)
 import Data.Array (Array, elems)
 import qualified Data.ByteString as BS
@@ -17,16 +18,10 @@ import Data.Typeable (Typeable)
 import Text.Pretty.Simple (pPrint, pPrintLightBg)
 import Text.Show.Functions ()
 
-type Environment = Map.Map Text SchemeVal
+type Env = Map.Map Text SchemeVal
 
-newtype Eval a = Eval {unEval :: ReaderT Environment IO a}
-  deriving (Monad, Functor, Applicative, MonadReader Environment, MonadIO)
-
-newtype Function = Function {fn :: [SchemeVal] -> Eval SchemeVal}
-  deriving (Typeable, Show)
-
-instance Eq Function where
-  (==) _ _ = False
+newtype SchemeM a = SchemeM {unScheme :: ReaderT Env (ExceptT SchemeError IO) a}
+  deriving (Monad, Functor, Applicative, MonadReader Env, MonadIO)
 
 data Number
   = Integer Integer
@@ -177,8 +172,8 @@ showVal (Boolean True) = "#t"
 showVal (Boolean False) = "#f"
 showVal (Number n) = showNum n
 showVal Nil = "nil"
-showVal Fun {} = "<func>"
-showVal Lambda {} = "<lambda>"
+showVal Primitive {} = "<prim>"
+showVal Fun {} = "<fun>"
 
 dumpAST :: SchemeVal -> IO ()
 dumpAST = dumpAST' True
