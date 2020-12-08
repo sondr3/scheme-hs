@@ -3,7 +3,6 @@
 module Scheme.Eval where
 
 import Control.Exception (throw)
-import Control.Monad (liftM, when)
 import Control.Monad.Cont (MonadIO (liftIO))
 import Control.Monad.Except (MonadError, runExceptT, throwError)
 import Data.Maybe (isNothing)
