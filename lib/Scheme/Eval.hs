@@ -12,9 +12,10 @@ import Scheme.Parser (parseInput)
 import Scheme.Types (Env, SchemeError (..), SchemeM, SchemeVal (..), showError, showVal, unScheme)
 
 evalLine :: Text -> IO ()
-evalLine input = runWithEnv buildEnvironment evalForm >>= print
-  where
-    evalForm = either (throw . ParserError . showError) eval $ parseInput input
+evalLine input = runWithEnv buildEnvironment (lineToSchemeM input) >>= print
+
+lineToSchemeM :: Text -> SchemeM SchemeVal
+lineToSchemeM input = either (throw . ParserError . showError) eval $ parseInput input
 
 runWithEnv :: Env -> SchemeM a -> IO (Either SchemeError a)
 runWithEnv env expr = runExceptT (runReaderT (unScheme expr) env)
