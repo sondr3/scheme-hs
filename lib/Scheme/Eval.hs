@@ -80,3 +80,6 @@ apply (Fun _ params vararg body closure) args
       Just arg' -> bindVariables env [(arg', List $ drop (length params) args)]
       Nothing -> env
 apply fn _ = throw $ NotFunction fn
+
+isReserved :: Text -> IOSchemeResult ()
+isReserved name = when (name `elem` ["define", "lambda", "if"]) $ throw $ ReservedName name

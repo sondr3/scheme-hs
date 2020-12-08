@@ -195,6 +195,7 @@ data SchemeError
   | ParserError Text
   | NotFunction SchemeVal
   | InvalidOperation Text
+  | ReservedName Text
   deriving (Show)
 
 instance Exception SchemeError
@@ -207,3 +208,4 @@ showError (ArgumentLengthMismatch ex act) = "Expected " <> T.pack (show ex) <> "
 showError (ParserError err) = "Parsing error, could not parse input: " <> err
 showError (NotFunction err) = "Attempt at calling " <> showVal err <> " as a function"
 showError (InvalidOperation err) = "Invalid: " <> err
+showError (ReservedName err) = "Cannot define : " <> err <> " because it is a reserved name"
