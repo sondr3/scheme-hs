@@ -3,20 +3,20 @@ module Scheme.Environment where
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import Scheme.Primitives (numericPrimitives)
-import Scheme.Types (Env, SchemeError (..), SchemeM, SchemeVal (..), showVal)
+import Scheme.Types (Env, SchemeM, SchemeVal (..), showVal)
 
 primitives :: [(Text, [SchemeVal] -> SchemeM SchemeVal)]
 primitives = numericPrimitives
 
 buildEnvironment :: Map.Map Text SchemeVal
-buildEnvironment = Map.fromList (map createPrimFunc primitives)
+buildEnvironment = Map.fromList (map createPrimFun primitives)
 
--- createPrimFunc :: (Text, [SchemeVal] -> Either SchemeError SchemeVal) -> (Text, SchemeVal)
--- createPrimFunc :: (a, [SchemeVal] -> Either SchemeError SchemeVal) -> (a, SchemeVal)
-createPrimFunc :: (a, [SchemeVal] -> SchemeM SchemeVal) -> (a, SchemeVal)
-createPrimFunc (sym, func) = (sym, Primitive func)
+-- createPrimFun :: (Text, [SchemeVal] -> Either SchemeError SchemeVal) -> (Text, SchemeVal)
+-- createPrimFun :: (a, [SchemeVal] -> Either SchemeError SchemeVal) -> (a, SchemeVal)
+createPrimFun :: (a, [SchemeVal] -> SchemeM SchemeVal) -> (a, SchemeVal)
+createPrimFun (sym, func) = (sym, Primitive func)
 
-createFunc ::
+createFun ::
   -- | Macro?
   Bool ->
   -- | Variadics
@@ -28,20 +28,20 @@ createFunc ::
   -- | Environment closure
   Env ->
   -- | Resulting function
-  Either SchemeError SchemeVal
-createFunc macro varargs params body env = pure $ Fun macro (map showVal params) varargs body env
+  SchemeVal
+createFun macro varargs params = Fun macro (map showVal params) varargs
 
-createNormalFunc ::
+createNormalFun ::
   -- | Parameters
   [SchemeVal] ->
   -- | Body
   [SchemeVal] ->
   Env ->
-  Either SchemeError SchemeVal
-createNormalFunc = createFunc False Nothing
+  SchemeVal
+createNormalFun = createFun False Nothing
 
-createVariadicFunc :: SchemeVal -> [SchemeVal] -> [SchemeVal] -> Env -> Either SchemeError SchemeVal
-createVariadicFunc = createFunc False . Just . showVal
+createVariadicFun :: SchemeVal -> [SchemeVal] -> [SchemeVal] -> Env -> SchemeVal
+createVariadicFun = createFun False . Just . showVal
 
-createMacro :: [SchemeVal] -> [SchemeVal] -> Env -> Either SchemeError SchemeVal
-createMacro = createFunc True Nothing
+createMacro :: [SchemeVal] -> [SchemeVal] -> Env -> SchemeVal
+createMacro = createFun True Nothing
