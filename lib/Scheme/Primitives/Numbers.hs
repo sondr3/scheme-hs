@@ -8,9 +8,9 @@ import Data.Complex (imagPart, realPart)
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
 import Scheme.Operators (unaryOperator)
-import Scheme.Types (Number (..), SchemeError (..), SchemeM, SchemeVal (..))
+import Scheme.Types (Number (..), SchemeError (..), SchemeResult, SchemeVal (..))
 
-numericPrimitives :: [(Text, [SchemeVal] -> SchemeM SchemeVal)]
+numericPrimitives :: [(Text, [SchemeVal] -> SchemeResult SchemeVal)]
 numericPrimitives =
   [ ("number?", unaryOperator isNumber),
     ("complex?", unaryOperator isComplex),
@@ -98,19 +98,19 @@ isNaN' (Number (Real x)) = Boolean (isNaN x)
 isNaN' (Number (Complex x)) = Boolean (isNaN (imagPart x) || isNaN (realPart x))
 isNaN' _ = Boolean False
 
-add :: [SchemeVal] -> SchemeM SchemeVal
+add :: [SchemeVal] -> SchemeResult SchemeVal
 add [] = pure $ Number $ Integer 0
 add xs = do
   nums <- mapM unwrapNumber xs
   return $ Number (sum nums)
 
-multiply :: [SchemeVal] -> SchemeM SchemeVal
+multiply :: [SchemeVal] -> SchemeResult SchemeVal
 multiply [] = pure $ Number $ Integer 1
 multiply xs = do
   nums <- mapM unwrapNumber xs
   return $ Number (product nums)
 
-sub :: [SchemeVal] -> SchemeM SchemeVal
+sub :: [SchemeVal] -> SchemeResult SchemeVal
 sub [] = throw $ ArgumentLengthMismatch 1 []
 sub [x] = do
   num <- unwrapNumber x
@@ -119,7 +119,7 @@ sub xs = do
   nums <- mapM unwrapNumber xs
   return $ Number (foldl1 (-) nums)
 
-division :: [SchemeVal] -> SchemeM SchemeVal
+division :: [SchemeVal] -> SchemeResult SchemeVal
 division [] = throw $ ArgumentLengthMismatch 1 []
 division [x] = do
   num <- unwrapNumber x
@@ -131,6 +131,6 @@ division xs = do
 isDoubleInt :: Double -> Bool
 isDoubleInt d = (ceiling d :: Integer) == (floor d :: Integer)
 
-unwrapNumber :: SchemeVal -> SchemeM Number
+unwrapNumber :: SchemeVal -> SchemeResult Number
 unwrapNumber (Number x) = pure x
 unwrapNumber x = throw $ TypeMismatch "number" x
