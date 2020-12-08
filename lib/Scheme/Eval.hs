@@ -3,6 +3,7 @@
 module Scheme.Eval where
 
 import Control.Exception (throw)
+import Control.Monad (when)
 import Control.Monad.Cont (MonadIO (liftIO))
 import Control.Monad.Except (MonadError, runExceptT, throwError)
 import Data.Maybe (isNothing)
@@ -44,6 +45,9 @@ eval env (List [Symbol "if", test, cons]) = do
   eval env test >>= \case
     Boolean True -> eval env cons
     _ -> return Nil
+-- (set!〈variable〉〈expression〉)
+eval env (List [Symbol "set!", Symbol sym, expr]) =
+  isReserved sym >> eval env expr >>= defineVariable env sym >> return Nil
 -- Definition of the form (define〈variable〉〈expression〉
 eval env (List (Symbol "define" : formal@(Symbol sym) : expr)) =
   isReserved sym >> createVariadicFun formal [] expr env >>= defineVariable env sym
