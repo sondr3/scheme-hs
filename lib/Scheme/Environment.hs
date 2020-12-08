@@ -4,8 +4,12 @@ import Control.Exception (throw)
 import Control.Monad.Except (MonadIO (liftIO), throwError)
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Scheme.Primitives (numericPrimitives)
 import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeResult, SchemeVal (..), showVal)
+
+primitiveNames :: [String]
+primitiveNames = map (T.unpack . fst) primitives
 
 primitives :: [(Text, [SchemeVal] -> SchemeResult SchemeVal)]
 primitives = numericPrimitives

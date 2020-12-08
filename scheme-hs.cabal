@@ -70,11 +70,12 @@ library
 executable scheme
   import:         config
   main-is:        Main.hs
-  build-depends:  scheme-hs
-  hs-source-dirs: app
+  build-depends:
+    , haskeline  ^>=0.8.1.0
+    , repline    ^>=0.4.0.0
+    , scheme-hs
 
--- other-modules:
--- other-extensions:
+  hs-source-dirs: app
 
 test-suite scheme-hs-test
   import:             config
