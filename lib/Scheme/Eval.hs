@@ -58,8 +58,8 @@ eval env (List [Symbol "if", test, cons]) = do
 eval env (List [Symbol "set!", Symbol sym, expr]) =
   isReserved sym >> eval env expr >>= defineVariable env sym >> return Nil
 -- Definition of the form (define〈variable〉〈expression〉
-eval env (List (Symbol "define" : formal@(Symbol sym) : expr)) =
-  isReserved sym >> createVariadicFun formal [] expr env >>= defineVariable env sym
+eval env (List [Symbol "define", Symbol sym, expr]) =
+  isReserved sym >> eval env expr >>= defineVariable env sym
 -- (define (〈variable〉 〈formals〉)〈body〉[]
 eval env (List (Symbol "define" : List (Symbol sym : formals) : body)) =
   isReserved sym >> createNormalFun formals body env >>= defineVariable env sym
