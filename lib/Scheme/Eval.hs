@@ -6,11 +6,12 @@ import Control.Exception (throw)
 import Control.Monad (when)
 import Control.Monad.Cont (MonadIO (liftIO))
 import Control.Monad.Except (MonadError, runExceptT, throwError)
+import Data.Functor ((<&>))
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import Scheme.Environment (bindVariables, buildEnvironment, createNormalFun, createVariadicFun, defineVariable, getVariable, getVariables)
 import Scheme.Parser (parseInput)
-import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeVal (..), showError, showVal)
+import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeVal (..), extractValue, showError, showVal, trapError)
 
 evalLine :: Text -> IO ()
 evalLine input = do
@@ -24,6 +25,9 @@ evalLineForm input = case parseInput input of
 
 runWithEnv :: Env -> SchemeVal -> IO (Either SchemeError SchemeVal)
 runWithEnv env expr = runExceptT (eval env expr)
+
+liftIOThrows :: IOSchemeResult String -> IO String
+liftIOThrows action = runExceptT (trapError action) <&> extractValue
 
 liftThrows :: MonadError e m => Either e a -> m a
 liftThrows (Right v) = return v

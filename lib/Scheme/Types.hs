@@ -5,7 +5,7 @@
 module Scheme.Types where
 
 import Control.Exception (Exception, throw)
-import Control.Monad.Except (ExceptT)
+import Control.Monad.Except (ExceptT, MonadError, catchError)
 import Data.Array (Array, elems)
 import qualified Data.ByteString as BS
 import Data.Complex (Complex ((:+)), imagPart, realPart)
@@ -22,6 +22,13 @@ type Env = IORef [(Text, IORef SchemeVal)]
 type SchemeResult = Either SchemeError
 
 type IOSchemeResult = ExceptT SchemeError IO
+
+trapError :: (MonadError a m, Show a) => m String -> m String
+trapError action = catchError action (return . show)
+
+extractValue :: Either a p -> p
+extractValue (Right val) = val
+extractValue _ = error "Called with Left"
 
 data Number
   = Integer Integer
