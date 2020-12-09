@@ -1,6 +1,7 @@
 module Scheme.Parser where
 
-import Control.Monad (void)
+import Control.Monad (unless, void)
+import Control.Monad.Except (MonadError (throwError))
 import Data.Array (listArray)
 import qualified Data.ByteString as BS
 import qualified Data.Char as C
@@ -10,7 +11,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Read (hexadecimal)
 import Data.Word (Word8)
-import Scheme.Types (Number (..), SchemeError (..), SchemeVal (..))
+import Scheme.Types (Number (..), SchemeError (..), SchemeResult, SchemeVal (..))
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -256,8 +257,21 @@ parseExpr file input = case runParser pExpr file input of
   Right out -> Right out
   Left err -> Left $ ParserError (T.pack $ errorBundlePretty err)
 
-parseInput :: Text -> Either SchemeError SchemeVal
+parseInput :: Text -> SchemeResult SchemeVal
 parseInput = parseExpr "file"
 
 parseFile :: FilePath -> Text -> Either SchemeError SchemeVal
 parseFile = parseExpr
+
+parseOrThrow :: Parser a -> Text -> SchemeResult a
+parseOrThrow parser input =
+  let checkEmpty = do
+        rest <- getInput
+        unless (T.null rest) $ fail $ "Non-empty: " ++ T.unpack rest
+      parser' = parser <* checkEmpty
+   in case runParser parser' "scheme" input of
+        Right val -> return val
+        Left err -> throwError $ ParserError (T.pack $ errorBundlePretty err)
+
+readManyExpr :: Text -> SchemeResult [SchemeVal]
+readManyExpr = parseOrThrow $ some pExpr
