@@ -8,7 +8,7 @@ import Control.Monad.Cont (MonadIO (liftIO))
 import Control.Monad.Except (MonadError, runExceptT, throwError)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
-import Scheme.Environment (bindVariables, buildEnvironment, createNormalFun, createVariadicFun, defineVariable, getVariable)
+import Scheme.Environment (bindVariables, buildEnvironment, createNormalFun, createVariadicFun, defineVariable, getVariable, getVariables)
 import Scheme.Parser (parseInput)
 import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeVal (..), showError, showVal)
 
@@ -35,7 +35,12 @@ eval _ (List []) = return Nil
 eval _ val@(Character _) = return val
 eval _ val@(Number _) = return val
 eval _ val@(Boolean _) = return val
-eval env (Symbol sym) = getVariable sym env
+eval env (Symbol sym) = getVariable env sym
+eval env (List [Symbol "interaction-environment"]) = do
+  bindings <- getVariables env
+  return $ List (map toPair bindings)
+  where
+    toPair (var, val) = List [Symbol var, val]
 eval _ (List [Symbol "quote", xs]) = return xs
 eval env (List [Symbol "if", test, cons, alt]) = do
   eval env test >>= \case

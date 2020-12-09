@@ -6,10 +6,11 @@ import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Scheme.Primitives (numericPrimitives)
+import Scheme.Primitives.Eval (evalPrimitives)
 import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeResult, SchemeVal (..), showVal)
 
 primitiveNames :: [String]
-primitiveNames = map (T.unpack . fst) primitives
+primitiveNames = map (T.unpack . fst) primitives ++ map T.unpack evalPrimitives
 
 primitives :: [(Text, [SchemeVal] -> SchemeResult SchemeVal)]
 primitives = numericPrimitives
@@ -67,8 +68,15 @@ withVar envRef var = do
     Just val -> liftIO $ readIORef val
     Nothing -> throw $ UnboundSymbol var
 
-getVariable :: Text -> Env -> IOSchemeResult SchemeVal
-getVariable var envRef = withVar envRef var
+getVariables :: Env -> IOSchemeResult [(Text, SchemeVal)]
+getVariables envRef = do
+  env <- liftIO $ readIORef envRef
+  let vars = map fst env
+  vals <- traverse (getVariable envRef) vars
+  return $ zip vars vals
+
+getVariable :: Env -> Text -> IOSchemeResult SchemeVal
+getVariable = withVar
 
 setVariable :: Env -> Text -> SchemeVal -> IOSchemeResult SchemeVal
 setVariable envRef var val = do
