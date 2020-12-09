@@ -73,7 +73,6 @@ executable scheme
   main-is:        Main.hs
   build-depends:
     , haskeline  ^>=0.8.1.0
-    , repline    ^>=0.4.0.0
     , scheme-hs
 
   hs-source-dirs: app
