@@ -58,7 +58,19 @@ instance Eq Number where
   (Complex x) == (Real y) = x == (y :+ 0.0)
   (Rational x) == (Rational y) = x == y
   (Complex x) == (Complex y) = x == y
-  _ == _ = throw $ InvalidOperation "Cannot add rationals and complex numbers"
+  _ == _ = False
+
+instance Ord Number where
+  compare (Integer x) (Integer y) = compare x y
+  compare (Integer x) (Real y) = compare (fromInteger x) y
+  compare (Integer x) (Rational y) = compare (fromInteger x) y
+  compare (Real x) (Integer y) = compare x (fromInteger y)
+  compare (Rational x) (Integer y) = compare x (fromInteger y)
+  compare (Real x) (Real y) = compare x y
+  compare (Real x) (Rational y) = compare (toRational x) y
+  compare (Rational x) (Real y) = compare x (toRational y)
+  compare (Rational x) (Rational y) = compare x y
+  compare _ _ = throw $ InvalidOperation "Cannot compare complex numbers"
 
 instance Num Number where
   fromInteger x = Integer x
