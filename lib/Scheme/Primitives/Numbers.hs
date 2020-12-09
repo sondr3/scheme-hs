@@ -23,6 +23,7 @@ numericPrimitives =
     ("finite?", unaryOperator isFinite),
     ("infinite?", unaryOperator isInfinite'),
     ("nan?", unaryOperator isNaN'),
+    ("=", equal),
     ("+", add),
     ("-", sub),
     ("*", multiply),
@@ -127,6 +128,15 @@ division [x] = do
 division xs = do
   nums <- mapM unwrapNumber xs
   return $ Number (foldl1 (/) nums)
+
+equal :: [SchemeVal] -> SchemeResult SchemeVal
+equal [] = throw $ ArgumentLengthMismatch 1 []
+equal [x] = case isNaN' x of
+  Boolean True -> return $ Boolean False
+  _ -> return $ Boolean True
+equal xs = do
+  nums <- mapM unwrapNumber xs
+  return $ Boolean $ all ((== True) . (== head nums)) (tail nums)
 
 isDoubleInt :: Double -> Bool
 isDoubleInt d = (ceiling d :: Integer) == (floor d :: Integer)
