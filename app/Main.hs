@@ -1,7 +1,8 @@
 module Main where
 
-import Control.Monad.Cont (MonadTrans (lift))
+import Control.Monad.State.Strict
 import Data.Functor ((<&>))
+import Data.List (isPrefixOf)
 import qualified Data.Text as T
 import Scheme
 import System.Console.Haskeline
@@ -26,27 +27,37 @@ evalStringAndShow env expr =
   where
     nilOrLast x = if null x then List [] else last x
 
-evalAndPrint :: Env -> String -> InputT IO ()
-evalAndPrint env expr = do
-  out <- lift $ evalStringAndShow env expr
-  outputStrLn out
-
-schemeSettings :: Settings IO
-schemeSettings = defaultSettings {historyFile = Just ".schistory"}
-
-repl' :: (String -> InputT IO ()) -> IO ()
-repl' a = runInputT schemeSettings $ loop a
+schemeSettings :: IO (Settings (StateT [String] IO))
+schemeSettings =
+  return $
+    Settings
+      { complete = completer,
+        historyFile = Just ".schistory",
+        autoAddHistory = True
+      }
   where
-    loop :: (String -> InputT IO ()) -> InputT IO ()
-    loop action = do
+    completer :: CompletionFunc (StateT [String] IO)
+    completer = completeWord Nothing " \t" $ \w -> do map simpleCompletion . filter (isPrefixOf w) <$> get
+
+runRepl :: Env -> IO ()
+runRepl env = do
+  conf <- schemeSettings
+  flip evalStateT primitiveNames . runInputT conf $ loop
+  where
+    loop :: InputT (StateT [String] IO) ()
+    loop = do
       input <- getInputLine "λ "
       case input of
         Nothing -> return ()
         Just "quit" -> return ()
         Just "exit" -> return ()
-        Just (';' : _) -> loop action
-        Just "" -> loop action
-        Just x -> action x >> loop action
+        Just (';' : _) -> loop
+        Just "" -> loop
+        Just x -> puts x >> loop
+    puts :: String -> InputT (StateT [String] IO) ()
+    puts input = do
+      out <- lift $ lift $ evalStringAndShow env input
+      outputStrLn out >> loop
 
 main :: IO ()
 main = do
@@ -54,7 +65,7 @@ main = do
   case args of
     [] -> do
       env <- buildEnvironment
-      repl' (evalAndPrint env)
+      runRepl env
     ["-h"] -> help
     ["--help"] -> help
     _ -> help
