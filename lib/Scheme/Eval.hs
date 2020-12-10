@@ -39,6 +39,7 @@ eval _ (List []) = return Nil
 eval _ val@(Character _) = return val
 eval _ val@(Number _) = return val
 eval _ val@(Boolean _) = return val
+eval _ val@(String _) = return val
 eval env (Symbol sym) = getVariable env sym
 eval env (List [Symbol "interaction-environment"]) = do
   bindings <- getVariables env
