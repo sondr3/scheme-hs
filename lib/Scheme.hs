@@ -4,6 +4,7 @@ module Scheme
     module Scheme.Eval,
     module Scheme.Primitives,
     module Scheme.Environment,
+    module Scheme.Utils,
   )
 where
 
@@ -12,3 +13,4 @@ import Scheme.Eval
 import Scheme.Parser
 import Scheme.Primitives
 import Scheme.Types
+import Scheme.Utils

@@ -3,10 +3,12 @@ module Main where
 import Control.Monad.State.Strict
 import Data.Functor ((<&>))
 import Data.List (isPrefixOf)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Scheme
 import System.Console.Haskeline
 import System.Environment (getArgs)
+import System.IO (hPutStrLn, stderr)
 
 help :: IO ()
 help =
@@ -59,6 +61,11 @@ runRepl env = do
       out <- lift $ lift $ evalStringAndShow env input
       outputStrLn out >> loop
 
+runFile :: Text -> IO ()
+runFile file = do
+  env <- buildEnvironment >>= flip bindVariables [("args", List [String file])]
+  liftIOThrows (show <$> eval env (List [Symbol "load", String file])) >>= hPutStrLn stderr
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -68,4 +75,4 @@ main = do
       runRepl env
     ["-h"] -> help
     ["--help"] -> help
-    _ -> help
+    (f : _) -> runFile (T.pack f)
