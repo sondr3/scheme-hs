@@ -35,7 +35,17 @@ numericPrimitives =
     ("*", multiply),
     ("/", division),
     ("abs", unOp numAbs),
-    ("floor/", floorInt)
+    ("floor/", floorInt),
+    ("floor-quotient", floorQuot),
+    ("floor-remainder", floorRem),
+    ("truncate/", truncateInt),
+    ("truncate-quotient", truncateQuot),
+    ("truncate-remainder", truncateRem),
+    ("quotient", truncateQuot),
+    ("remainder", truncateRem),
+    ("modulo", floorRem),
+    ("gcd", numGcd),
+    ("lcm", numLcm)
   ]
 
 isNumber :: SchemeVal -> SchemeVal
@@ -149,6 +159,52 @@ floorInt [x, Number (Integer _)] = throwError $ TypeMismatch "integer" x
 floorInt [Number (Integer _), x] = throwError $ TypeMismatch "integer" x
 floorInt _ = throwError $ ArgumentLengthMismatch 2 []
 
+floorQuot :: [SchemeVal] -> SchemeResult SchemeVal
+floorQuot [Number (Integer x), Number (Integer y)] = return $ Number $ Integer (x `div` y)
+floorQuot [x, Number (Integer _)] = throwError $ TypeMismatch "integer" x
+floorQuot [Number (Integer _), x] = throwError $ TypeMismatch "integer" x
+floorQuot _ = throwError $ ArgumentLengthMismatch 2 []
+
+floorRem :: [SchemeVal] -> SchemeResult SchemeVal
+floorRem [Number (Integer x), Number (Integer y)] = return $ Number $ Integer (x `mod` y)
+floorRem [x, Number (Integer _)] = throwError $ TypeMismatch "integer" x
+floorRem [Number (Integer _), x] = throwError $ TypeMismatch "integer" x
+floorRem _ = throwError $ ArgumentLengthMismatch 2 []
+
+truncateInt :: [SchemeVal] -> SchemeResult SchemeVal
+truncateInt [Number (Integer x), Number (Integer y)] = return $ List [Number $ Integer x', Number $ Integer y']
+  where
+    (x', y') = x `quotRem` y
+truncateInt [x, Number (Integer _)] = throwError $ TypeMismatch "integer" x
+truncateInt [Number (Integer _), x] = throwError $ TypeMismatch "integer" x
+truncateInt _ = throwError $ ArgumentLengthMismatch 2 []
+
+truncateQuot :: [SchemeVal] -> SchemeResult SchemeVal
+truncateQuot [Number (Integer x), Number (Integer y)] = return $ Number $ Integer (x `quot` y)
+truncateQuot [x, Number (Integer _)] = throwError $ TypeMismatch "integer" x
+truncateQuot [Number (Integer _), x] = throwError $ TypeMismatch "integer" x
+truncateQuot _ = throwError $ ArgumentLengthMismatch 2 []
+
+truncateRem :: [SchemeVal] -> SchemeResult SchemeVal
+truncateRem [Number (Integer x), Number (Integer y)] = return $ Number $ Integer (x `rem` y)
+truncateRem [x, Number (Integer _)] = throwError $ TypeMismatch "integer" x
+truncateRem [Number (Integer _), x] = throwError $ TypeMismatch "integer" x
+truncateRem _ = throwError $ ArgumentLengthMismatch 2 []
+
+numGcd :: [SchemeVal] -> SchemeResult SchemeVal
+numGcd [] = return $ Number (Integer 0)
+numGcd [x] = return x
+numGcd xs = do
+  ints <- mapM unwrapToInt xs
+  return $ Number $ Integer (foldl1 gcd ints)
+
+numLcm :: [SchemeVal] -> SchemeResult SchemeVal
+numLcm [] = return $ Number (Integer 1)
+numLcm [x] = return x
+numLcm xs = do
+  ints <- mapM unwrapToInt xs
+  return $ Number $ Integer (foldl1 lcm ints)
+
 numericBoolOp :: (Number -> Number -> Bool) -> [SchemeVal] -> Either SchemeError SchemeVal
 numericBoolOp _ [] = throwError $ ArgumentLengthMismatch 1 []
 numericBoolOp _ [x] = case isNaN' x of
@@ -160,6 +216,12 @@ numericBoolOp op xs = do
 
 isDoubleInt :: Double -> Bool
 isDoubleInt d = (ceiling d :: Integer) == (floor d :: Integer)
+
+unwrapToInt :: SchemeVal -> SchemeResult Integer
+unwrapToInt (Number (Integer x)) = pure x
+unwrapToInt (Number (Real x)) = pure $ toInteger x
+unwrapToInt (Number (Rational x)) = pure $ toInteger $ floor $ fromRational x
+unwrapToInt x = throwError $ TypeMismatch "integer" x
 
 unwrapNumber :: SchemeVal -> SchemeResult Number
 unwrapNumber (Number x) = pure x
