@@ -10,8 +10,8 @@ import Scheme.Types (SchemeError (..), SchemeResult, SchemeVal (..))
 
 booleanPrimitives :: [(Text, [SchemeVal] -> SchemeResult SchemeVal)]
 booleanPrimitives =
-  [ ("&&", booleanBoolOp (&&)),
-    ("||", booleanBoolOp (||)),
+  [ ("and", booleanBoolOp (&&)),
+    ("or", booleanBoolOp (||)),
     ("boolean?", unOp isBoolean),
     ("boolean=?", booleanEq)
   ]
