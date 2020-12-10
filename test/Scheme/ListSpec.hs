@@ -1,6 +1,6 @@
 module Scheme.ListSpec (spec) where
 
-import Scheme (Number (..), SchemeError (..), SchemeVal (..))
+import Scheme (Number (..), SchemeVal (..))
 import Scheme.TestUtils
 import Test.Hspec
 

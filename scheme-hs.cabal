@@ -68,6 +68,7 @@ library
     Scheme.Primitives.Lists
     Scheme.Primitives.Numbers
     Scheme.Primitives.Strings
+    Scheme.Primitives.Symbols
     Scheme.Types
 
 executable scheme
@@ -90,6 +91,7 @@ test-suite scheme-hs-test
     Scheme.ParserSpec
     Scheme.ProcedureSpec
     Scheme.SchemeSpec
+    Scheme.SymbolSpec
     Scheme.TestUtils
 
   default-extensions: OverloadedStrings
