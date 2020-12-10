@@ -5,12 +5,12 @@ import Data.Functor ((<&>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Scheme.Parser (readManyExpr)
-import Scheme.Types (IOSchemeResult, SchemeVal, extractValue)
+import Scheme.Types (IOSchemeResult, SchemeResult, SchemeVal, extractValue)
 
 liftIOThrows :: IOSchemeResult String -> IO String
 liftIOThrows action = runExceptT (trapError action) <&> extractValue
 
-liftThrows :: MonadError e m => Either e a -> m a
+liftThrows :: SchemeResult a -> IOSchemeResult a
 liftThrows (Right v) = return v
 liftThrows (Left err) = throwError err
 
