@@ -23,7 +23,7 @@ stringPrimitives =
     ("string-ci>=?", strBoolCiOp (>=)),
     ("string-upcase", unOp stringUpcase),
     ("string-downcase", unOp stringDowncase),
-    ("string-foldcase", unOp stringFoldcase),
+    ("string-foldcase", unOp stringFoldcase)
   ]
 
 strBoolCiOp :: (Text -> Text -> Bool) -> [SchemeVal] -> Either SchemeError SchemeVal
