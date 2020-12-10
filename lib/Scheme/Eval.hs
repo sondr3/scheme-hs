@@ -3,7 +3,7 @@
 module Scheme.Eval where
 
 import Control.Exception (throw)
-import Control.Monad (when)
+import Control.Monad (void, when)
 import Control.Monad.Cont (MonadIO (liftIO))
 import Control.Monad.Except (runExceptT, throwError)
 import Data.Maybe (isNothing)
@@ -14,7 +14,7 @@ import Scheme.Parser (parseInput)
 import Scheme.Primitives (equivalencePrimitives, ioPrimitives, listPrimitives, numericPrimitives, stringPrimitives, symbolPrimitives)
 import Scheme.Primitives.Eval (evalPrimitives)
 import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeResult, SchemeVal (..), showError, showVal)
-import Scheme.Utils (liftThrows, load)
+import Scheme.Utils (liftIOThrows, liftThrows, load)
 
 primitiveNames :: [String]
 primitiveNames =
@@ -52,6 +52,7 @@ createIOFun (sym, func) = (sym, IOFun func)
 evalLine :: Text -> IO ()
 evalLine input = do
   env <- buildEnvironment
+  void (loadStdLib env)
   runWithEnv env (evalLineForm input) >>= print
 
 evalLineForm :: Text -> SchemeVal
@@ -61,6 +62,9 @@ evalLineForm input = case parseInput input of
 
 runWithEnv :: Env -> SchemeVal -> IO (Either SchemeError SchemeVal)
 runWithEnv env expr = runExceptT (eval env expr)
+
+loadStdLib :: Env -> IO String
+loadStdLib env = liftIOThrows (show <$> eval env (List [Symbol "load", String "stdlib.scm"]))
 
 eval :: Env -> SchemeVal -> IOSchemeResult SchemeVal
 eval _ Nil = return Nil

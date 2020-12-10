@@ -44,6 +44,7 @@ schemeSettings =
 runRepl :: Env -> IO ()
 runRepl env = do
   conf <- schemeSettings
+  void (loadStdLib env)
   flip evalStateT primitiveNames . runInputT conf $ loop
   where
     loop :: InputT (StateT [String] IO) ()
