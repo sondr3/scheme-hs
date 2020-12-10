@@ -35,30 +35,13 @@ data Number
   | Real Double
   | Rational Rational
   | Complex (Complex Double)
-  deriving (Show, Typeable)
+  deriving (Show, Typeable, Eq)
 
 showNum :: Number -> Text
 showNum (Integer i) = T.pack $ show i
 showNum (Real d) = T.pack $ show d
 showNum (Rational r) = T.pack $ show (numerator r) <> "/" <> show (denominator r)
 showNum (Complex p) = T.pack $ show (realPart p) <> "+" <> show (imagPart p) <> "i"
-
-instance Eq Number where
-  (Integer x) == (Integer y) = x == y
-  (Integer x) == (Real y) = fromInteger x == y
-  (Integer x) == (Rational y) = fromInteger x == y
-  (Integer x) == (Complex y) = fromInteger x == y
-  (Real x) == (Integer y) = x == fromInteger y
-  (Rational x) == (Integer y) = x == fromInteger y
-  (Complex x) == (Integer y) = x == fromInteger y
-  (Real x) == (Real y) = x == y
-  (Real x) == (Rational y) = toRational x == y
-  (Real x) == (Complex y) = x :+ 0.0 == y
-  (Rational x) == (Real y) = x == toRational y
-  (Complex x) == (Real y) = x == (y :+ 0.0)
-  (Rational x) == (Rational y) = x == y
-  (Complex x) == (Complex y) = x == y
-  _ == _ = False
 
 instance Ord Number where
   compare (Integer x) (Integer y) = compare x y

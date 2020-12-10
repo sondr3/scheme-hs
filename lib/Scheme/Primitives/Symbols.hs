@@ -1,5 +1,6 @@
 module Scheme.Primitives.Symbols
   ( symbolPrimitives,
+    unwrapSymbol,
   )
 where
 

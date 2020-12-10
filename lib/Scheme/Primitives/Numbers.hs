@@ -1,5 +1,6 @@
 module Scheme.Primitives.Numbers
   ( numericPrimitives,
+    unwrapNumber,
   )
 where
 
@@ -161,4 +162,5 @@ isDoubleInt d = (ceiling d :: Integer) == (floor d :: Integer)
 
 unwrapNumber :: SchemeVal -> SchemeResult Number
 unwrapNumber (Number x) = pure x
+unwrapNumber (List [x]) = unwrapNumber x
 unwrapNumber x = throw $ TypeMismatch "number" x

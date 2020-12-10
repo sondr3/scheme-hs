@@ -1,5 +1,6 @@
 module Scheme.Primitives.Strings
   ( stringPrimitives,
+    unwrapString,
   )
 where
 

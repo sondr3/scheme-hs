@@ -64,6 +64,7 @@ library
     Scheme.Operators
     Scheme.Parser
     Scheme.Primitives
+    Scheme.Primitives.Equivalence
     Scheme.Primitives.Eval
     Scheme.Primitives.Lists
     Scheme.Primitives.Numbers
@@ -86,6 +87,7 @@ test-suite scheme-hs-test
   hs-source-dirs:     test
   main-is:            Spec.hs  
   other-modules:
+    Scheme.EquivalenceSpec
     Scheme.ListSpec
     Scheme.NumberSpec
     Scheme.ParserSpec
