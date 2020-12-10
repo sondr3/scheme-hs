@@ -4,11 +4,10 @@ module Scheme.Primitives.Numbers
 where
 
 import Control.Exception (throw)
-import Data.Bifunctor (Bifunctor (bimap))
 import Data.Complex (imagPart, realPart)
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
-import Scheme.Operators (binOp, unOp, unaryOperator)
+import Scheme.Operators (unOp)
 import Scheme.Types (Number (..), SchemeError (..), SchemeResult, SchemeVal (..))
 
 numericPrimitives :: [(Text, [SchemeVal] -> SchemeResult SchemeVal)]
