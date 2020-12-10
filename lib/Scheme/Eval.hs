@@ -26,13 +26,6 @@ evalLineForm input = case parseInput input of
 runWithEnv :: Env -> SchemeVal -> IO (Either SchemeError SchemeVal)
 runWithEnv env expr = runExceptT (eval env expr)
 
-liftIOThrows :: IOSchemeResult String -> IO String
-liftIOThrows action = runExceptT (trapError action) <&> extractValue
-
-liftThrows :: MonadError e m => Either e a -> m a
-liftThrows (Right v) = return v
-liftThrows (Left err) = throwError err
-
 eval :: Env -> SchemeVal -> IOSchemeResult SchemeVal
 eval _ Nil = return Nil
 eval _ (List []) = return Nil

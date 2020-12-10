@@ -72,6 +72,7 @@ library
     Scheme.Primitives.Strings
     Scheme.Primitives.Symbols
     Scheme.Types
+    Scheme.Utils
 
 executable scheme
   import:         config

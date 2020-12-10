@@ -5,7 +5,7 @@
 module Scheme.Types where
 
 import Control.Exception (Exception, throw)
-import Control.Monad.Except (ExceptT, MonadError, catchError)
+import Control.Monad.Except (ExceptT)
 import Data.Array (Array, elems)
 import qualified Data.ByteString as BS
 import Data.Complex (Complex ((:+)), imagPart, realPart)
@@ -14,6 +14,7 @@ import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Typeable (Typeable)
+import System.IO (Handle)
 import Text.Pretty.Simple (pPrint, pPrintLightBg)
 import Text.Show.Functions ()
 
@@ -22,9 +23,6 @@ type Env = IORef [(Text, IORef SchemeVal)]
 type SchemeResult = Either SchemeError
 
 type IOSchemeResult = ExceptT SchemeError IO
-
-trapError :: (MonadError a m, Show a) => m String -> m String
-trapError action = catchError action (return . show)
 
 extractValue :: Either a p -> p
 extractValue (Right val) = val
@@ -163,6 +161,8 @@ data SchemeVal
   | Nil
   | Primitive ([SchemeVal] -> SchemeResult SchemeVal)
   | Fun Fn
+  | IOFun ([SchemeVal] -> IOSchemeResult SchemeVal)
+  | Port Handle
   deriving (Show, Typeable)
 
 instance Eq SchemeVal where
@@ -198,6 +198,8 @@ showVal (Number n) = showNum n
 showVal Nil = "nil"
 showVal Primitive {} = "<prim>"
 showVal Fun {} = "<fun>"
+showVal IOFun {} = "<io>"
+showVal (Port _) = "<port>"
 
 dumpAST :: SchemeVal -> IO ()
 dumpAST = dumpAST' True
