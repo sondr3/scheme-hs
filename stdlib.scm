@@ -91,3 +91,6 @@
 
 (define (filter pred lst)
   (foldr (lambda (x y) (if (pred x) (cons x y) y)) '() lst))
+
+(define (boolean? x)
+  (or (eq? x #t) (eq? x #f)))

@@ -5,20 +5,14 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Text (Text)
-import Scheme.Operators (unOp)
 import Scheme.Types (SchemeError (..), SchemeResult, SchemeVal (..))
 
 booleanPrimitives :: [(Text, [SchemeVal] -> SchemeResult SchemeVal)]
 booleanPrimitives =
   [ ("and", booleanBoolOp (&&)),
     ("or", booleanBoolOp (||)),
-    ("boolean?", unOp isBoolean),
     ("boolean=?", booleanEq)
   ]
-
-isBoolean :: SchemeVal -> SchemeVal
-isBoolean (Boolean _) = Boolean True
-isBoolean _ = Boolean False
 
 booleanEq :: [SchemeVal] -> SchemeResult SchemeVal
 booleanEq [] = throwError $ ArgumentLengthMismatch 1 []
