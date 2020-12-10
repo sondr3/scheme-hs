@@ -3,25 +3,10 @@ module Scheme.Environment where
 import Control.Monad.Except (MonadIO (liftIO), throwError)
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text)
-import qualified Data.Text as T
-import Scheme.Primitives (equivalencePrimitives, listPrimitives, numericPrimitives, stringPrimitives, symbolPrimitives)
-import Scheme.Primitives.Eval (evalPrimitives)
-import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeResult, SchemeVal (..), showVal)
-
-primitiveNames :: [String]
-primitiveNames = map (T.unpack . fst) primitives ++ map T.unpack evalPrimitives
-
-primitives :: [(Text, [SchemeVal] -> SchemeResult SchemeVal)]
-primitives = numericPrimitives ++ stringPrimitives ++ listPrimitives ++ symbolPrimitives ++ equivalencePrimitives
+import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeVal (..), showVal)
 
 nullEnv :: IO Env
 nullEnv = newIORef []
-
-buildEnvironment :: IO Env
-buildEnvironment = nullEnv >>= flip bindVariables (map createPrimFun primitives)
-
-createPrimFun :: (a, [SchemeVal] -> SchemeResult SchemeVal) -> (a, SchemeVal)
-createPrimFun (sym, func) = (sym, Primitive func)
 
 createFun ::
   -- | Macro?

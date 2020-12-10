@@ -5,13 +5,49 @@ module Scheme.Eval where
 import Control.Exception (throw)
 import Control.Monad (when)
 import Control.Monad.Cont (MonadIO (liftIO))
-import Control.Monad.Except (MonadError, runExceptT, throwError)
-import Data.Functor ((<&>))
+import Control.Monad.Except (runExceptT, throwError)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
-import Scheme.Environment (bindVariables, buildEnvironment, createNormalFun, createVariadicFun, defineVariable, getVariable, getVariables)
+import qualified Data.Text as T
+import Scheme.Environment (bindVariables, createNormalFun, createVariadicFun, defineVariable, getVariable, getVariables, nullEnv)
 import Scheme.Parser (parseInput)
-import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeVal (..), extractValue, showError, showVal, trapError)
+import Scheme.Primitives (equivalencePrimitives, ioPrimitives, listPrimitives, numericPrimitives, stringPrimitives, symbolPrimitives)
+import Scheme.Primitives.Eval (evalPrimitives)
+import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeResult, SchemeVal (..), showError, showVal)
+import Scheme.Utils (liftThrows)
+
+primitiveNames :: [String]
+primitiveNames =
+  map (T.unpack . fst) primitives
+    ++ map T.unpack evalPrimitives
+    ++ map (T.unpack . fst) ioPrimitives
+
+primitives :: [(Text, [SchemeVal] -> SchemeResult SchemeVal)]
+primitives =
+  numericPrimitives
+    ++ stringPrimitives
+    ++ listPrimitives
+    ++ symbolPrimitives
+    ++ equivalencePrimitives
+
+buildEnvironment :: IO Env
+buildEnvironment =
+  nullEnv
+    >>= flip
+      bindVariables
+      ( map
+          createIOFun
+          ( ioPrimitives
+              ++ [("apply", applyProc)]
+          )
+          ++ map createPrimFun primitives
+      )
+
+createPrimFun :: (a, [SchemeVal] -> SchemeResult SchemeVal) -> (a, SchemeVal)
+createPrimFun (sym, func) = (sym, Primitive func)
+
+createIOFun :: (a, [SchemeVal] -> IOSchemeResult SchemeVal) -> (a, SchemeVal)
+createIOFun (sym, func) = (sym, IOFun func)
 
 evalLine :: Text -> IO ()
 evalLine input = do
@@ -73,6 +109,12 @@ eval env (List (fun : exprs)) = do
     Fun Fn {macro = True} -> apply func exprs >>= eval env
     _ -> mapM (eval env) exprs >>= apply func
 eval _ xs = throwError (Generic $ "Unknown: " <> showVal xs)
+
+applyProc :: [SchemeVal] -> IOSchemeResult SchemeVal
+applyProc [fun, List args] = apply fun args
+applyProc [fun, PairList args rest] = applyProc [fun, List (args ++ [rest])]
+applyProc (fun : args) = apply fun args
+applyProc _ = throwError $ InvalidOperation "apply-proc"
 
 apply :: SchemeVal -> [SchemeVal] -> IOSchemeResult SchemeVal
 apply (Primitive fn) args = liftThrows $ fn args

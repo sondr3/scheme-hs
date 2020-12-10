@@ -273,5 +273,8 @@ parseOrThrow parser input =
         Right val -> return val
         Left err -> throwError $ ParserError (T.pack $ errorBundlePretty err)
 
+readExpr :: Text -> SchemeResult SchemeVal
+readExpr = parseOrThrow pExpr
+
 readManyExpr :: Text -> SchemeResult [SchemeVal]
 readManyExpr = parseOrThrow $ some pExpr
