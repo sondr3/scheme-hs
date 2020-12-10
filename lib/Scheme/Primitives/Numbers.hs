@@ -219,8 +219,8 @@ isDoubleInt d = (ceiling d :: Integer) == (floor d :: Integer)
 
 unwrapToInt :: SchemeVal -> SchemeResult Integer
 unwrapToInt (Number (Integer x)) = pure x
-unwrapToInt (Number (Real x)) = pure $ toInteger x
-unwrapToInt (Number (Rational x)) = pure $ toInteger $ floor $ fromRational x
+unwrapToInt (Number (Real x)) = pure $ floor x
+unwrapToInt (Number (Rational x)) = pure $ floor x
 unwrapToInt x = throwError $ TypeMismatch "integer" x
 
 unwrapNumber :: SchemeVal -> SchemeResult Number
