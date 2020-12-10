@@ -232,6 +232,7 @@ data SchemeError
   | NotFunction SchemeVal
   | InvalidOperation Text
   | ReservedName Text
+  | EmptyList
   deriving (Show)
 
 instance Exception SchemeError
@@ -245,3 +246,4 @@ showError (ParserError err) = "Parsing error, could not parse input: " <> err
 showError (NotFunction err) = "Attempt at calling " <> showVal err <> " as a function"
 showError (InvalidOperation err) = "Invalid: " <> err
 showError (ReservedName err) = "Cannot define : " <> err <> " because it is a reserved name"
+showError EmptyList = "Empty list is not allowed"

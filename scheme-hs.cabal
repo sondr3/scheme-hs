@@ -65,6 +65,7 @@ library
     Scheme.Parser
     Scheme.Primitives
     Scheme.Primitives.Eval
+    Scheme.Primitives.Lists
     Scheme.Primitives.Numbers
     Scheme.Primitives.Strings
     Scheme.Types
@@ -84,6 +85,7 @@ test-suite scheme-hs-test
   hs-source-dirs:     test
   main-is:            Spec.hs  
   other-modules:
+    Scheme.ListSpec
     Scheme.NumberSpec
     Scheme.ParserSpec
     Scheme.ProcedureSpec
