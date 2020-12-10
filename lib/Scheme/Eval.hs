@@ -11,7 +11,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Scheme.Environment (bindVariables, createMacro, createNormalFun, createVariadicFun, defineVariable, getVariable, getVariables, nullEnv)
 import Scheme.Parser (parseInput)
-import Scheme.Primitives (equivalencePrimitives, ioPrimitives, listPrimitives, numericPrimitives, stringPrimitives, symbolPrimitives)
+import Scheme.Primitives (booleanPrimitives, equivalencePrimitives, ioPrimitives, listPrimitives, numericPrimitives, stringPrimitives, symbolPrimitives)
 import Scheme.Primitives.Eval (evalPrimitives)
 import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeResult, SchemeVal (..), showError, showVal)
 import Scheme.Utils (liftIOThrows, liftThrows, load)
@@ -29,6 +29,7 @@ primitives =
     ++ listPrimitives
     ++ symbolPrimitives
     ++ equivalencePrimitives
+    ++ booleanPrimitives
 
 buildEnvironment :: IO Env
 buildEnvironment =

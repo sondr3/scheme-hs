@@ -5,9 +5,11 @@ module Scheme.Primitives
     symbolPrimitives,
     equivalencePrimitives,
     ioPrimitives,
+    booleanPrimitives,
   )
 where
 
+import Scheme.Primitives.Boolean (booleanPrimitives)
 import Scheme.Primitives.Equivalence (equivalencePrimitives)
 import Scheme.Primitives.IO (ioPrimitives)
 import Scheme.Primitives.Lists (listPrimitives)

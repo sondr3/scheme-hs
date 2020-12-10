@@ -64,6 +64,7 @@ library
     Scheme.Operators
     Scheme.Parser
     Scheme.Primitives
+    Scheme.Primitives.Boolean
     Scheme.Primitives.Equivalence
     Scheme.Primitives.Eval
     Scheme.Primitives.IO
