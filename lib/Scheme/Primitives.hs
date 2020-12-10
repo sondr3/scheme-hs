@@ -4,10 +4,12 @@ module Scheme.Primitives
     listPrimitives,
     symbolPrimitives,
     equivalencePrimitives,
+    ioPrimitives,
   )
 where
 
 import Scheme.Primitives.Equivalence (equivalencePrimitives)
+import Scheme.Primitives.IO (ioPrimitives)
 import Scheme.Primitives.Lists (listPrimitives)
 import Scheme.Primitives.Numbers (numericPrimitives)
 import Scheme.Primitives.Strings (stringPrimitives)

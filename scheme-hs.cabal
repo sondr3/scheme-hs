@@ -66,6 +66,7 @@ library
     Scheme.Primitives
     Scheme.Primitives.Equivalence
     Scheme.Primitives.Eval
+    Scheme.Primitives.IO
     Scheme.Primitives.Lists
     Scheme.Primitives.Numbers
     Scheme.Primitives.Strings
