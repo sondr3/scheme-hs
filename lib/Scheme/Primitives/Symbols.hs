@@ -5,6 +5,7 @@ module Scheme.Primitives.Symbols
 where
 
 import Control.Exception (throw)
+import Control.Monad.Except (MonadError (throwError))
 import Data.Text (Text)
 import Scheme.Operators (unOp)
 import Scheme.Types (SchemeError (..), SchemeResult, SchemeVal (..))
@@ -38,4 +39,4 @@ stringToSymbol x = throw $ TypeMismatch "symbol" x
 
 unwrapSymbol :: SchemeVal -> SchemeResult Text
 unwrapSymbol (Symbol s) = pure s
-unwrapSymbol x = throw $ TypeMismatch "symbol" x
+unwrapSymbol x = throwError $ TypeMismatch "symbol" x

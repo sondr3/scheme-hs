@@ -30,4 +30,4 @@ spec = parallel $ do
     it "(equal? \"abc\" \"abc\")" $ testRun "(equal? \"abc\" \"abc\")" `shouldReturn` Boolean True
     it "(equal? 2 2)" $ testRun "(equal? 2 2)" `shouldReturn` Boolean True
     xit "(equal? (make-vector 5 'a)(make-vector 5 'a))" $ testRun "(equal? (make-vector 5 'a)(make-vector 5 'a))" `shouldReturn` Boolean True
-    it "(equal? (lambda (x) x)(lambda (y) y))" $ testRun "(equal? (lambda (x) x)(lambda (y) y))" `shouldReturn` Boolean True
+    it "(equal? (lambda (x) x)(lambda (y) y))" $ testRun "(equal? (lambda (x) x)(lambda (y) y))" `shouldReturn` Boolean False

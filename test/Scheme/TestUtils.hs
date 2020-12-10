@@ -2,9 +2,8 @@ module Scheme.TestUtils where
 
 import Control.Exception (throw)
 import Data.Text (Text)
-import qualified Data.Text as T
 import GHC.IO (unsafePerformIO)
-import Scheme (SchemeError (..), SchemeVal, buildEnvironment, evalLineForm, runWithEnv, showError, showVal)
+import Scheme (SchemeError (..), SchemeVal, buildEnvironment, evalLineForm, runWithEnv, showVal)
 import Text.Megaparsec (ParseErrorBundle, Parsec, parse)
 
 -- | Test utility to run a parser on some input
@@ -18,14 +17,6 @@ testRun input = do
   case unsafePerformIO $ runWithEnv env (evalLineForm input) of
     Right val -> pure val
     Left err -> throw err
-
--- | Run parser and return AST
-testFail :: Text -> IO SchemeError
-testFail input = do
-  env <- buildEnvironment
-  case unsafePerformIO $ runWithEnv env (evalLineForm input) of
-    Right val -> error (T.unpack $ showVal val)
-    Left err -> return err
 
 -- | Run parser and return output
 testRunOutput :: Text -> IO Text

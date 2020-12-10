@@ -79,12 +79,12 @@ eval env (List (fun : exprs)) = do
   case func of
     Fun Fn {macro = True} -> apply func exprs >>= eval env
     _ -> mapM (eval env) exprs >>= apply func
-eval _ xs = throw (Generic $ "Unknown: " <> showVal xs)
+eval _ xs = throwError (Generic $ "Unknown: " <> showVal xs)
 
 apply :: SchemeVal -> [SchemeVal] -> IOSchemeResult SchemeVal
 apply (Primitive fn) args = liftThrows $ fn args
 apply (Fun (Fn _ params vararg body closure)) args
-  | length params /= length args && isNothing vararg = throw $ ArgumentLengthMismatch (length params) args
+  | length params /= length args && isNothing vararg = throwError $ ArgumentLengthMismatch (length params) args
   | otherwise = liftIO (bindVariables closure $ zip params args) >>= bindVararg vararg >>= evalBody
   where
     evalBody env = last <$> mapM (eval env) body
@@ -94,4 +94,4 @@ apply (Fun (Fn _ params vararg body closure)) args
 apply fn _ = throwError $ NotFunction fn
 
 isReserved :: Text -> IOSchemeResult ()
-isReserved name = when (name `elem` ["define", "lambda", "if"]) $ throw $ ReservedName name
+isReserved name = when (name `elem` ["define", "lambda", "if"]) $ throwError $ ReservedName name

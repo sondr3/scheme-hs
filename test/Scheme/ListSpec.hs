@@ -21,8 +21,8 @@ spec = parallel $ do
     it "(car '(a b c))" $ testRun "(car '(a b c))" `shouldReturn` Symbol "a"
     it "(car '((a) b c d))" $ testRun "(car '((a) b c d))" `shouldReturn` List [Symbol "a"]
     it "(car '(1 . 2))" $ testRun "(car '(1 . 2))" `shouldReturn` Number (Integer 1)
-    it "(car '())" $ testFail "(car '())" `shouldThrow` isSchemeError
+    it "(car '())" $ testRun "(car '())" `shouldThrow` isSchemeError
   describe "cdr" $ do
     it "(cdr '((a) b c d))" $ testRun "(cdr '((a) b c d))" `shouldReturn` List [Symbol "b", Symbol "c", Symbol "d"]
     it "(cdr '(1 . 2))" $ testRun "(cdr '(1 . 2))" `shouldReturn` Number (Integer 2)
-    it "(cdr '())" $ testFail "(cdr '())" `shouldThrow` isSchemeError
+    it "(cdr '())" $ testRun "(cdr '())" `shouldThrow` isSchemeError

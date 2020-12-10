@@ -5,8 +5,7 @@ module Scheme.Primitives.Equivalence
   )
 where
 
-import Control.Exception (throw)
-import Control.Monad.Except (MonadError (catchError))
+import Control.Monad.Except (MonadError (catchError), throwError)
 import Data.Text (Text)
 import Scheme.Primitives.Numbers (unwrapNumber)
 import Scheme.Primitives.Strings (unwrapString)
@@ -24,7 +23,7 @@ equivalencePrimitives =
 
 eqv :: [SchemeVal] -> SchemeResult SchemeVal
 eqv [x, y] = return $ Boolean (x == y)
-eqv x = throw $ ArgumentLengthMismatch 2 x
+eqv x = throwError $ ArgumentLengthMismatch 2 x
 
 unpackEquals :: SchemeVal -> SchemeVal -> Unpacker -> SchemeResult Bool
 unpackEquals x y (AnyUnpacker unpacker) =
@@ -39,4 +38,4 @@ equal [x, y] = do
   primEq <- or <$> mapM (unpackEquals x y) [AnyUnpacker unwrapNumber, AnyUnpacker unwrapString, AnyUnpacker unwrapSymbol]
   eqvEq <- eqv [x, y]
   return $ Boolean (primEq || let (Boolean b) = eqvEq in b)
-equal x = throw $ ArgumentLengthMismatch 2 x
+equal x = throwError $ ArgumentLengthMismatch 2 x

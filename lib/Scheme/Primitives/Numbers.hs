@@ -5,6 +5,7 @@ module Scheme.Primitives.Numbers
 where
 
 import Control.Exception (throw)
+import Control.Monad.Except (MonadError (throwError))
 import Data.Complex (imagPart, realPart)
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
@@ -119,7 +120,7 @@ multiply xs = do
   return $ Number (product nums)
 
 sub :: [SchemeVal] -> SchemeResult SchemeVal
-sub [] = throw $ ArgumentLengthMismatch 1 []
+sub [] = throwError $ ArgumentLengthMismatch 1 []
 sub [x] = do
   num <- unwrapNumber x
   return $ Number (negate num)
@@ -128,7 +129,7 @@ sub xs = do
   return $ Number (foldl1 (-) nums)
 
 division :: [SchemeVal] -> SchemeResult SchemeVal
-division [] = throw $ ArgumentLengthMismatch 1 []
+division [] = throwError $ ArgumentLengthMismatch 1 []
 division [x] = do
   num <- unwrapNumber x
   return $ Number (recip num)
@@ -144,12 +145,12 @@ floorInt :: [SchemeVal] -> SchemeResult SchemeVal
 floorInt [Number (Integer x), Number (Integer y)] = return $ List [Number $ Integer x', Number $ Integer y']
   where
     (x', y') = x `divMod` y
-floorInt [x, Number (Integer _)] = throw $ TypeMismatch "integer" x
-floorInt [Number (Integer _), x] = throw $ TypeMismatch "integer" x
-floorInt _ = throw $ ArgumentLengthMismatch 2 []
+floorInt [x, Number (Integer _)] = throwError $ TypeMismatch "integer" x
+floorInt [Number (Integer _), x] = throwError $ TypeMismatch "integer" x
+floorInt _ = throwError $ ArgumentLengthMismatch 2 []
 
 numericBoolOp :: (Number -> Number -> Bool) -> [SchemeVal] -> Either SchemeError SchemeVal
-numericBoolOp _ [] = throw $ ArgumentLengthMismatch 1 []
+numericBoolOp _ [] = throwError $ ArgumentLengthMismatch 1 []
 numericBoolOp _ [x] = case isNaN' x of
   Boolean True -> return $ Boolean False
   _ -> return $ Boolean True
@@ -163,4 +164,4 @@ isDoubleInt d = (ceiling d :: Integer) == (floor d :: Integer)
 unwrapNumber :: SchemeVal -> SchemeResult Number
 unwrapNumber (Number x) = pure x
 unwrapNumber (List [x]) = unwrapNumber x
-unwrapNumber x = throw $ TypeMismatch "number" x
+unwrapNumber x = throwError $ TypeMismatch "number" x

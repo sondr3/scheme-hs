@@ -5,6 +5,7 @@ module Scheme.Primitives.Strings
 where
 
 import Control.Exception (throw)
+import Control.Monad.Except (MonadError (throwError))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Scheme.Operators (unOp)
@@ -28,14 +29,14 @@ stringPrimitives =
   ]
 
 strBoolCiOp :: (Text -> Text -> Bool) -> [SchemeVal] -> Either SchemeError SchemeVal
-strBoolCiOp _ [] = throw $ ArgumentLengthMismatch 1 []
+strBoolCiOp _ [] = throwError $ ArgumentLengthMismatch 1 []
 strBoolCiOp _ [_] = return $ Boolean True
 strBoolCiOp op xs = do
   txts <- map T.toUpper <$> mapM unwrapString xs
   return $ Boolean $ and $ zipWith op txts $ drop 1 txts
 
 strBoolOp :: (Text -> Text -> Bool) -> [SchemeVal] -> Either SchemeError SchemeVal
-strBoolOp _ [] = throw $ ArgumentLengthMismatch 1 []
+strBoolOp _ [] = throwError $ ArgumentLengthMismatch 1 []
 strBoolOp _ [_] = return $ Boolean True
 strBoolOp op xs = do
   txts <- mapM unwrapString xs
@@ -55,4 +56,4 @@ stringFoldcase x = throw $ TypeMismatch "string" x
 
 unwrapString :: SchemeVal -> SchemeResult Text
 unwrapString (String s) = pure s
-unwrapString x = throw $ TypeMismatch "string" x
+unwrapString x = throwError $ TypeMismatch "string" x

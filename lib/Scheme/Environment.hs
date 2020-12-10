@@ -1,6 +1,5 @@
 module Scheme.Environment where
 
-import Control.Exception (throw)
 import Control.Monad.Except (MonadIO (liftIO), throwError)
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text)
@@ -66,7 +65,7 @@ withVar envRef var = do
   env <- liftIO $ readIORef envRef
   case lookup var env of
     Just val -> liftIO $ readIORef val
-    Nothing -> throw $ UnboundSymbol var
+    Nothing -> throwError $ UnboundSymbol var
 
 getVariables :: Env -> IOSchemeResult [(Text, SchemeVal)]
 getVariables envRef = do
