@@ -4,25 +4,26 @@ module Scheme.Primitives.Numbers
 where
 
 import Control.Exception (throw)
+import Data.Bifunctor (Bifunctor (bimap))
 import Data.Complex (imagPart, realPart)
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
-import Scheme.Operators (unaryOperator)
+import Scheme.Operators (binOp, unOp, unaryOperator)
 import Scheme.Types (Number (..), SchemeError (..), SchemeResult, SchemeVal (..))
 
 numericPrimitives :: [(Text, [SchemeVal] -> SchemeResult SchemeVal)]
 numericPrimitives =
-  [ ("number?", unaryOperator isNumber),
-    ("complex?", unaryOperator isComplex),
-    ("real?", unaryOperator isReal),
-    ("rational?", unaryOperator isRational),
-    ("integer?", unaryOperator isInteger),
-    ("exact?", unaryOperator isExact),
-    ("inexact?", unaryOperator isInexact),
-    ("exact-integer?", unaryOperator isExactInteger),
-    ("finite?", unaryOperator isFinite),
-    ("infinite?", unaryOperator isInfinite'),
-    ("nan?", unaryOperator isNaN'),
+  [ ("number?", unOp isNumber),
+    ("complex?", unOp isComplex),
+    ("real?", unOp isReal),
+    ("rational?", unOp isRational),
+    ("integer?", unOp isInteger),
+    ("exact?", unOp isExact),
+    ("inexact?", unOp isInexact),
+    ("exact-integer?", unOp isExactInteger),
+    ("finite?", unOp isFinite),
+    ("infinite?", unOp isInfinite'),
+    ("nan?", unOp isNaN'),
     ("=", numericBoolOp (==)),
     ("<", numericBoolOp (<)),
     (">", numericBoolOp (>)),
@@ -31,7 +32,9 @@ numericPrimitives =
     ("+", add),
     ("-", sub),
     ("*", multiply),
-    ("/", division)
+    ("/", division),
+    ("abs", unOp numAbs),
+    ("floor/", floorInt)
   ]
 
 isNumber :: SchemeVal -> SchemeVal
@@ -132,6 +135,18 @@ division [x] = do
 division xs = do
   nums <- mapM unwrapNumber xs
   return $ Number (foldl1 (/) nums)
+
+numAbs :: SchemeVal -> SchemeVal
+numAbs (Number n) = Number $ abs n
+numAbs x = throw $ TypeMismatch "number" x
+
+floorInt :: [SchemeVal] -> SchemeResult SchemeVal
+floorInt [Number (Integer x), Number (Integer y)] = return $ List [Number $ Integer x', Number $ Integer y']
+  where
+    (x', y') = x `divMod` y
+floorInt [x, Number (Integer _)] = throw $ TypeMismatch "integer" x
+floorInt [Number (Integer _), x] = throw $ TypeMismatch "integer" x
+floorInt _ = throw $ ArgumentLengthMismatch 2 []
 
 numericBoolOp :: (Number -> Number -> Bool) -> [SchemeVal] -> Either SchemeError SchemeVal
 numericBoolOp _ [] = throw $ ArgumentLengthMismatch 1 []
