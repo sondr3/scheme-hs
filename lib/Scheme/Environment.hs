@@ -5,7 +5,7 @@ import Control.Monad.Except (MonadIO (liftIO), throwError)
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Scheme.Primitives (numericPrimitives)
+import Scheme.Primitives (numericPrimitives, stringPrimitives)
 import Scheme.Primitives.Eval (evalPrimitives)
 import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeResult, SchemeVal (..), showVal)
 
@@ -13,7 +13,7 @@ primitiveNames :: [String]
 primitiveNames = map (T.unpack . fst) primitives ++ map T.unpack evalPrimitives
 
 primitives :: [(Text, [SchemeVal] -> SchemeResult SchemeVal)]
-primitives = numericPrimitives
+primitives = numericPrimitives ++ stringPrimitives
 
 nullEnv :: IO Env
 nullEnv = newIORef []

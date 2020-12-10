@@ -66,6 +66,7 @@ library
     Scheme.Primitives
     Scheme.Primitives.Eval
     Scheme.Primitives.Numbers
+    Scheme.Primitives.Strings
     Scheme.Types
 
 executable scheme
