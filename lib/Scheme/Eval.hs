@@ -81,6 +81,12 @@ eval env (List [Symbol "interaction-environment"]) = do
   where
     toPair (var, val) = List [Symbol var, val]
 eval _ (List [Symbol "quote", xs]) = return xs
+eval env (List [Symbol "quasiquote", xs]) = do
+  evalUnquotes xs
+  where
+    evalUnquotes (List [Symbol "unquote", expr]) = eval env expr
+    evalUnquotes (List items) = List <$> traverse evalUnquotes items
+    evalUnquotes form = return form
 eval env (List [Symbol "if", test, cons, alt]) = do
   eval env test >>= \case
     Boolean True -> eval env cons
@@ -123,6 +129,7 @@ applyProc _ = throwError $ InvalidOperation "apply-proc"
 
 apply :: SchemeVal -> [SchemeVal] -> IOSchemeResult SchemeVal
 apply (Primitive fn) args = liftThrows $ fn args
+apply (IOFun fn) args = fn args
 apply (Fun (Fn _ params vararg body closure)) args
   | length params /= length args && isNothing vararg = throwError $ ArgumentLengthMismatch (length params) args
   | otherwise = liftIO (bindVariables closure $ zip params args) >>= bindVararg vararg >>= evalBody
