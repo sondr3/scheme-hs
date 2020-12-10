@@ -9,7 +9,7 @@ import Control.Monad.Except (runExceptT, throwError)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Scheme.Environment (bindVariables, createNormalFun, createVariadicFun, defineVariable, getVariable, getVariables, nullEnv)
+import Scheme.Environment (bindVariables, createMacro, createNormalFun, createVariadicFun, defineVariable, getVariable, getVariables, nullEnv)
 import Scheme.Parser (parseInput)
 import Scheme.Primitives (equivalencePrimitives, ioPrimitives, listPrimitives, numericPrimitives, stringPrimitives, symbolPrimitives)
 import Scheme.Primitives.Eval (evalPrimitives)
@@ -99,6 +99,8 @@ eval env (List [Symbol "if", test, cons]) = do
 eval env (List [Symbol "set!", Symbol sym, expr]) =
   isReserved sym >> eval env expr >>= defineVariable env sym >> return Nil
 -- Definition of the form (define〈variable〉〈expression〉
+eval env (List (Symbol "define-syntax" : List (Symbol var : params) : body)) =
+  createMacro params body env >>= defineVariable env var
 eval env (List [Symbol "define", Symbol sym, expr]) =
   isReserved sym >> eval env expr >>= defineVariable env sym
 -- (define (〈variable〉 〈formals〉)〈body〉[]
