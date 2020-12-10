@@ -3,9 +3,9 @@ module Scheme.Primitives.IO (ioPrimitives) where
 import Control.Monad.Except
 import Data.Text (Text)
 import qualified Data.Text as T
-import Scheme.Parser (readExpr, readManyExpr)
+import Scheme.Parser (readExpr)
 import Scheme.Types (IOSchemeResult, SchemeError (..), SchemeVal (..))
-import Scheme.Utils (liftThrows)
+import Scheme.Utils (liftThrows, load)
 import System.IO
 
 ioPrimitives :: [(Text, [SchemeVal] -> IOSchemeResult SchemeVal)]
@@ -47,9 +47,6 @@ readContents [String filename] = do
   return $ String (T.pack file)
 readContents [] = throwError $ ArgumentLengthMismatch 1 []
 readContents x = throwError $ TypeMismatch "String" (head x)
-
-load :: Text -> IOSchemeResult [SchemeVal]
-load filename = liftIO (T.pack <$> readFile (T.unpack filename)) >>= liftThrows . readManyExpr
 
 readAll :: [SchemeVal] -> IOSchemeResult SchemeVal
 readAll [String filename] = List <$> load filename

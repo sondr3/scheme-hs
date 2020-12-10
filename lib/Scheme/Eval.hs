@@ -14,7 +14,7 @@ import Scheme.Parser (parseInput)
 import Scheme.Primitives (equivalencePrimitives, ioPrimitives, listPrimitives, numericPrimitives, stringPrimitives, symbolPrimitives)
 import Scheme.Primitives.Eval (evalPrimitives)
 import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeResult, SchemeVal (..), showError, showVal)
-import Scheme.Utils (liftThrows)
+import Scheme.Utils (liftThrows, load)
 
 primitiveNames :: [String]
 primitiveNames =
@@ -70,6 +70,7 @@ eval _ val@(Number _) = return val
 eval _ val@(Boolean _) = return val
 eval _ val@(String _) = return val
 eval env (Symbol sym) = getVariable env sym
+eval env (List [Symbol "load", String filename]) = load filename >>= fmap last . mapM (eval env)
 eval env (List [Symbol "interaction-environment"]) = do
   bindings <- getVariables env
   return $ List (map toPair bindings)
