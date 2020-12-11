@@ -1,5 +1,6 @@
 .schistory
 test.scm
+*.golden
 
 ### Created by https://www.gitignore.io
 ### Haskell ###

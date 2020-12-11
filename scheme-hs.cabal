@@ -99,7 +99,6 @@ test-suite scheme-hs-test
     Scheme.SymbolSpec
     Scheme.TestUtils
 
-  default-extensions: OverloadedStrings
   build-tool-depends: hspec-discover:hspec-discover ^>=2.7.4
   build-depends:
     , hspec             ^>=2.7.4
@@ -107,3 +106,15 @@ test-suite scheme-hs-test
     , scheme-hs
 
   ghc-options:        -threaded -rtsopts -with-rtsopts=-N
+
+test-suite scheme-hs-golden
+  import:         config
+  type:           exitcode-stdio-1.0
+  hs-source-dirs: spec
+  main-is:        Main.hs 
+  build-depends:
+    , scheme-hs
+    , tasty         ^>=1.4
+    , tasty-golden  ^>=2.3.4
+
+  ghc-options:    -threaded -rtsopts -with-rtsopts=-N
