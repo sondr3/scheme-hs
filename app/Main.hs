@@ -65,7 +65,7 @@ runRepl env = do
 runFile :: Text -> IO ()
 runFile file = do
   env <- buildEnvironment >>= flip bindVariables [("args", List [String file])]
-  liftIOThrows (show <$> eval env (List [Symbol "load", String file])) >>= hPutStrLn stderr
+  liftIOThrows (T.unpack . showVal <$> eval env (List [Symbol "load", String file])) >>= hPutStrLn stderr
 
 main :: IO ()
 main = do
