@@ -3,7 +3,9 @@ name:               scheme-hs
 version:            0.1.0
 tested-with:        GHC ==8.10.2
 synopsis:           A simple implementation of RSR7
-description:        A simple implementation of RSR7
+description:
+  A simple implementation of RSR7 with a host of bugs and missing features
+
 homepage:           https://github.com/sondr3/scheme-hs
 bug-reports:        https://github.com/sondr3/scheme-hs/issues
 license:            MIT
@@ -49,10 +51,10 @@ common config
 
 common library
   if flag(dev)
-    ghc-options: -O0 -Wall -Werror
+    ghc-options: "--disable-optimization" -Wall -Werror
 
   else
-    ghc-options: -O2 -Wall
+    ghc-options: -Wall
 
 library
   import:          config, library
