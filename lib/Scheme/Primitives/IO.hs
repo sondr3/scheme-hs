@@ -4,7 +4,7 @@ import Control.Monad.Except
 import Data.Text (Text)
 import qualified Data.Text as T
 import Scheme.Parser (readExpr)
-import Scheme.Types (IOSchemeResult, SchemeError (..), SchemeVal (..))
+import Scheme.Types (IOSchemeResult, SchemeError (..), SchemeVal (..)SchemeVal, )
 import Scheme.Utils (liftThrows, load)
 import System.IO
 
@@ -19,6 +19,9 @@ ioPrimitives =
     ("read-contents", readContents),
     ("read-all", readAll)
   ]
+
+printVal :: [SchemeVal] -> IOSchemeResult SchemeVal 
+printVal _ = undefined 
 
 makePort :: IOMode -> [SchemeVal] -> IOSchemeResult SchemeVal
 makePort mode [String filename] = fmap Port $ liftIO $ openFile (T.unpack filename) mode
