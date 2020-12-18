@@ -14,7 +14,8 @@ listPrimitives =
     ("cons", cons),
     ("car", car),
     ("cdr", cdr),
-    ("list?", unOp isList)
+    ("list?", unOp isList),
+    ("last", last')
   ]
 
 isPair :: SchemeVal -> SchemeVal
@@ -49,3 +50,9 @@ cdr x = throwError $ ArgumentLengthMismatch 1 x
 isList :: SchemeVal -> SchemeVal
 isList (List _) = Boolean True
 isList _ = Boolean False
+
+last' :: [SchemeVal] -> SchemeResult SchemeVal
+last' [l@(List [])] = return l
+last' [List x] = return $ last x
+last' [notList] = throwError $ TypeMismatch "list" notList
+last' badArgList = throwError $ ArgumentLengthMismatch 1 badArgList
