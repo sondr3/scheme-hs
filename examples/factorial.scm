@@ -1,4 +1,4 @@
 (define (factorial n)
-  (if (= 0 n)
+  (if (<= n 0)
     1
-    (* n (factorial (- 1 n)))))
+    (* n (factorial (- n 1)))))
