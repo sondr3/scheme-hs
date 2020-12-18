@@ -62,6 +62,9 @@
 (define (length lst)
   (fold (lambda (x y) (+ x 1)) 0 lst))
 
+(define (append lst . lsts)
+  (foldr (flip (curry foldr cons)) lst lsts))
+
 (define (reverse lst)
   (fold (flip cons) '() lst))
 
@@ -94,3 +97,18 @@
 
 (define (boolean? x)
   (or (eq? x #t) (eq? x #f)))
+
+(define (do . forms)
+  (last forms))
+
+(define (begin . forms)
+  (last forms))
+
+(define-syntax (bind-vars bindings)
+    `(map car bindings))
+
+(define-syntax (bind-vals bindings)
+    `(map cadr bindings))
+
+(define-syntax (let bindings body)
+    `(apply (lambda ,(bind-vars bindings) ,body) ',(bind-vals bindings)))
