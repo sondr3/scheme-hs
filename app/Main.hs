@@ -76,4 +76,7 @@ main = do
       runRepl env
     ["-h"] -> help
     ["--help"] -> help
+    ["-e", expr] -> do
+      env <- buildEnvironment
+      evalStringAndShow env expr >>= putStrLn
     (f : _) -> runFile (T.pack f)
