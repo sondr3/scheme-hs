@@ -1,7 +1,7 @@
-cabal-version:      2.4
+cabal-version:      3.0
 name:               scheme-hs
 version:            0.1.0
-tested-with:        GHC ==8.10.2
+tested-with:        GHC ==9.0
 synopsis:           A simple implementation of RSR7
 description:
   A simple implementation of RSR7 with a host of bugs and missing features
@@ -40,13 +40,13 @@ common config
     -Wincomplete-uni-patterns -Wredundant-constraints
 
   build-depends:
-    , array          ^>=0.5.4.0
-    , base           ^>=4.15.0.0
-    , bytestring     ^>=0.11.1.0
-    , containers     ^>=0.6.4.1
-    , megaparsec     ^>=9.2.0
-    , mtl            ^>=2.2.2
-    , pretty-simple  ^>=4.0.0.0
+    , array          ^>=0.5
+    , base           ^>=4.15
+    , bytestring     ^>=0.11
+    , containers     ^>=0.6
+    , megaparsec     ^>=9.2
+    , mtl            ^>=2.2
+    , pretty-simple  ^>=4.0
     , text           ^>=2.0
 
 common library
@@ -81,7 +81,7 @@ executable scheme
   import:         config
   main-is:        Main.hs
   build-depends:
-    , haskeline  ^>=0.8.1.0
+    , haskeline  ^>=0.8
     , scheme-hs
 
   hs-source-dirs: app
@@ -104,7 +104,7 @@ test-suite scheme-hs-test
   build-tool-depends: hspec-discover:hspec-discover ^>=2.9
   build-depends:
     , hspec             ^>=2.9
-    , hspec-megaparsec  ^>=2.2.0
+    , hspec-megaparsec  ^>=2.2
     , scheme-hs
 
   ghc-options:        -threaded -rtsopts -with-rtsopts=-N
@@ -117,6 +117,6 @@ test-suite scheme-hs-golden
   build-depends:
     , scheme-hs
     , tasty         ^>=1.4
-    , tasty-golden  ^>=2.3.4
+    , tasty-golden  ^>=2.3
 
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N
