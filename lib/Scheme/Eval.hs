@@ -99,9 +99,9 @@ eval env (List [Symbol "if", test, cons]) = do
 eval env (List (Symbol "cond" : forms))
   | null forms = throwError $ InvalidOperation "No true clause in cond"
   | otherwise = case head forms of
-    List (Symbol "else" : exprs) -> if null exprs then return $ List [] else mapM (eval env) exprs >>= liftThrows . return . last
-    List [test, cons] -> eval env $ List [Symbol "if", test, cons, List (Symbol "cond" : tail forms)]
-    _ -> throwError $ Generic "Could not evaluate cond expression"
+      List (Symbol "else" : exprs) -> if null exprs then return $ List [] else mapM (eval env) exprs >>= liftThrows . return . last
+      List [test, cons] -> eval env $ List [Symbol "if", test, cons, List (Symbol "cond" : tail forms)]
+      _ -> throwError $ Generic "Could not evaluate cond expression"
 -- (set!〈variable〉〈expression〉)
 eval env (List [Symbol "set!", Symbol sym, expr]) =
   isReserved sym >> eval env expr >>= defineVariable env sym >> return Nil
