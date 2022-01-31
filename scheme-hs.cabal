@@ -58,7 +58,7 @@ common library
 
 library
   import:          config, library
-  hs-source-dirs:  lib
+  hs-source-dirs:  src
   exposed-modules: Scheme
   other-modules:
     Scheme.Environment
