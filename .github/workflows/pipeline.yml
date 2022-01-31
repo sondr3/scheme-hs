@@ -1,0 +1,47 @@
+name: pipeline
+
+on: [push, pull_request]
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Haskell
+        id: setup-haskell-cabal
+        uses: haskell/actions/setup@v1
+        with:
+          ghc-version: "9.0"
+
+      - name: Formatting
+        uses: mrkkrp/ormolu-action@v5
+
+      - name: Set up HLint
+        uses: haskell/actions/hlint-setup@v1
+        with:
+          version: 3.3.6
+
+      - name: Run HLint
+        uses: haskell/actions/hlint-run@v1
+        with:
+          path: '["src/", "app/", "test/"]'
+
+      - name: Cache ~/.cabal/packages, ~/.cabal/store and dist-newstyle
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            dist-newstyle
+          key: ${{ runner.os }}-ghc-${{ hashFiles('**/*.cabal', '**/cabal.project', '**/cabal.project.freeze') }}
+          restore-keys: ${{ runner.os }}-ghc-
+
+      - name: Build
+        run: |
+          cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
+          cabal build all
+
+      - name: Test
+        run: |
+          cabal test all
