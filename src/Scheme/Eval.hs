@@ -9,6 +9,10 @@ module Scheme.Eval
     evalLine,
     evalLineForm,
     loadStdLib,
+    -- new things
+    newEnv,
+    runEval,
+    eval',
   )
 where
 
@@ -16,6 +20,8 @@ import Control.Exception (throw)
 import Control.Monad (void, when)
 import Control.Monad.Cont (MonadIO (liftIO))
 import Control.Monad.Except (runExceptT, throwError)
+import Control.Monad.Reader (MonadReader (ask), ReaderT (runReaderT))
+import qualified Data.Map as Map
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -23,8 +29,8 @@ import Scheme.Environment (bindVariables, createMacro, createNormalFun, createVa
 import Scheme.Parser (parseInput)
 import Scheme.Primitives (booleanPrimitives, equivalencePrimitives, ioPrimitives, listPrimitives, numericPrimitives, stringPrimitives, symbolPrimitives)
 import Scheme.Primitives.Eval (evalPrimitives)
-import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeResult, SchemeVal (..), showError, showVal)
-import Scheme.Utils (liftIOThrows, liftThrows, load)
+import Scheme.Types (Env, Eval, Fn (..), IOSchemeResult, NewEnv, SchemeError (..), SchemeResult, SchemeVal (..), showError, showVal)
+import Scheme.Utils (liftIOThrows, liftThrows, load, load')
 
 primitiveNames :: [String]
 primitiveNames =
@@ -77,6 +83,28 @@ runWithEnv env expr = runExceptT (eval env expr)
 loadStdLib :: Env -> IO String
 loadStdLib env = liftIOThrows (show <$> eval env (List [Symbol "load", String "stdlib.scm"]))
 
+newEnv :: Map.Map Text SchemeVal
+newEnv = Map.fromList (map createPrimFun numericPrimitives)
+
+runEval :: NewEnv -> Eval -> IO (Either SchemeError SchemeVal)
+runEval env ev = runExceptT (runReaderT ev env)
+
+eval' :: SchemeVal -> Eval
+eval' Nil = pure Nil
+eval' (List []) = pure Nil
+eval' val@(Character _) = pure val
+eval' val@(Number _) = pure val
+eval' val@(Boolean _) = pure val
+eval' val@(String _) = pure val
+eval' (Symbol sym) = do
+  env <- ask
+  case Map.lookup sym env of
+    Nothing -> throwError $ UnboundSymbol sym
+    Just val -> pure val
+eval' (List [Symbol "load", String filename]) = do
+  val <- liftIO $ load' filename
+  eval' $ last val
+
 eval :: Env -> SchemeVal -> IOSchemeResult SchemeVal
 eval _ Nil = return Nil
 eval _ (List []) = return Nil
@@ -109,9 +137,9 @@ eval env (List [Symbol "if", test, cons]) = do
 eval env (List (Symbol "cond" : forms))
   | null forms = throwError $ InvalidOperation "No true clause in cond"
   | otherwise = case head forms of
-      List (Symbol "else" : exprs) -> if null exprs then return $ List [] else mapM (eval env) exprs >>= liftThrows . return . last
-      List [test, cons] -> eval env $ List [Symbol "if", test, cons, List (Symbol "cond" : tail forms)]
-      _ -> throwError $ Generic "Could not evaluate cond expression"
+    List (Symbol "else" : exprs) -> if null exprs then return $ List [] else mapM (eval env) exprs >>= liftThrows . return . last
+    List [test, cons] -> eval env $ List [Symbol "if", test, cons, List (Symbol "cond" : tail forms)]
+    _ -> throwError $ Generic "Could not evaluate cond expression"
 -- (set!〈variable〉〈expression〉)
 eval env (List [Symbol "set!", Symbol sym, expr]) =
   isReserved sym >> eval env expr >>= defineVariable env sym >> return Nil

@@ -6,10 +6,12 @@ module Scheme.Types where
 
 import Control.Exception (Exception, throw)
 import Control.Monad.Except (ExceptT)
+import Control.Monad.Reader (ReaderT)
 import Data.Array (Array, elems)
 import qualified Data.ByteString as BS
 import Data.Complex (Complex ((:+)), imagPart, realPart)
 import Data.IORef (IORef)
+import qualified Data.Map as Map
 import Data.Ratio (denominator, numerator)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -19,6 +21,10 @@ import Text.Pretty.Simple (pPrint, pPrintLightBg)
 import Text.Show.Functions ()
 
 type Env = IORef [(Text, IORef SchemeVal)]
+
+type NewEnv = Map.Map Text SchemeVal
+
+type Eval = ReaderT NewEnv (ExceptT SchemeError IO) SchemeVal
 
 type SchemeResult = Either SchemeError
 
