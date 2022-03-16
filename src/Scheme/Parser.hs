@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
+
 module Scheme.Parser where
 
 import Control.Monad (unless, void)
@@ -16,7 +18,8 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
-newtype ParserError = Unimplemented Text deriving (Show, Eq, Ord)
+newtype ParserError = Unimplemented Text
+  deriving newtype (Show, Eq, Ord)
 
 instance ShowErrorComponent ParserError where
   showErrorComponent (Unimplemented text) = T.unpack text <> " is not implemented"

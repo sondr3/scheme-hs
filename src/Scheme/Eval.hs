@@ -1,6 +1,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Scheme.Eval where
+module Scheme.Eval
+  ( eval,
+    runWithEnv,
+    primitiveNames,
+    primitives,
+    buildEnvironment,
+    evalLine,
+    evalLineForm,
+    loadStdLib,
+  )
+where
 
 import Control.Exception (throw)
 import Control.Monad (void, when)

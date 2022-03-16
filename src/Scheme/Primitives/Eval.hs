@@ -1,4 +1,4 @@
-module Scheme.Primitives.Eval where
+module Scheme.Primitives.Eval (evalPrimitives) where
 
 import Data.Text (Text)
 

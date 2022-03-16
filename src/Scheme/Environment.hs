@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
+
 module Scheme.Environment where
 
 import Control.Monad.Except (MonadIO (liftIO), throwError)

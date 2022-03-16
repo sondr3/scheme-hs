@@ -1,4 +1,10 @@
-module Scheme.Utils where
+module Scheme.Utils
+  ( liftIOThrows,
+    liftThrows,
+    trapError,
+    load,
+  )
+where
 
 import Control.Monad.Except (MonadError, catchError, liftIO, runExceptT, throwError)
 import Data.Functor ((<&>))

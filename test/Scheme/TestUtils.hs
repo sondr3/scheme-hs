@@ -1,4 +1,10 @@
-module Scheme.TestUtils where
+module Scheme.TestUtils
+  ( testParse,
+    testRun,
+    testRunOutput,
+    isSchemeError,
+  )
+where
 
 import Control.Exception (throw)
 import Control.Monad (void)

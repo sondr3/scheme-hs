@@ -1,4 +1,4 @@
-module Scheme.Operators where
+module Scheme.Operators (unOp, binOp, Unary, Binary) where
 
 import Control.Monad.Except (MonadError (throwError))
 import Scheme.Types (SchemeError (..), SchemeVal (..))

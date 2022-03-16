@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
 
 module Scheme.Types where
 
@@ -33,7 +33,7 @@ data Number
   | Real Double
   | Rational Rational
   | Complex (Complex Double)
-  deriving (Show, Typeable, Eq)
+  deriving stock (Show, Typeable, Eq)
 
 showNum :: Number -> Text
 showNum (Integer i) = T.pack $ show i
@@ -54,7 +54,7 @@ instance Ord Number where
   compare _ _ = throw $ InvalidOperation "Cannot compare complex numbers"
 
 instance Num Number where
-  fromInteger x = Integer x
+  fromInteger = Integer
 
   (Integer x) + (Integer y) = Integer (x + y)
   (Integer x) + (Real y) = Real (fromInteger x + y)
@@ -120,7 +120,7 @@ instance Num Number where
   signum (Complex x) = Complex (signum x)
 
 instance Fractional Number where
-  fromRational x = Rational x
+  fromRational = Rational
 
   (Integer x) / (Integer y) = Rational (fromInteger x / fromInteger y)
   (Integer x) / (Real y) = Real (fromInteger x / y)
@@ -163,7 +163,7 @@ data SchemeVal
   | Fun Fn
   | IOFun ([SchemeVal] -> IOSchemeResult SchemeVal)
   | Port Handle
-  deriving (Show, Typeable)
+  deriving stock (Show, Typeable)
 
 instance Eq SchemeVal where
   (==) (List x) (List y) = length x == length y && all (uncurry (==)) (zip x y)
@@ -218,7 +218,7 @@ data SchemeError
   | InvalidOperation Text
   | ReservedName Text
   | EmptyList
-  deriving (Show)
+  deriving stock (Show)
 
 instance Exception SchemeError
 
