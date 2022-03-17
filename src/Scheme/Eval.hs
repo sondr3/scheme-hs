@@ -20,7 +20,7 @@ import Control.Exception (throw)
 import Control.Monad (void, when)
 import Control.Monad.Cont (MonadIO (liftIO))
 import Control.Monad.Except (runExceptT, throwError)
-import Control.Monad.Reader (MonadReader (ask), ReaderT (runReaderT))
+import Control.Monad.Reader (MonadReader (ask), ReaderT (runReaderT), asks)
 import qualified Data.Map as Map
 import Data.Maybe (isNothing)
 import Data.Text (Text)
@@ -101,9 +101,8 @@ eval' (Symbol sym) = do
   case Map.lookup sym env of
     Nothing -> throwError $ UnboundSymbol sym
     Just val -> pure val
-eval' (List [Symbol "load", String filename]) = do
-  val <- liftIO $ load' filename
-  eval' $ last val
+eval' (List [Symbol "load", String filename]) = liftIO (load' filename) >>= eval' . last
+eval' (List [Symbol "interaction-environment"]) = asks (List . map (\(k, v) -> List [Symbol k, v]) . Map.toList)
 
 eval :: Env -> SchemeVal -> IOSchemeResult SchemeVal
 eval _ Nil = return Nil
