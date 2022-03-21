@@ -19,8 +19,9 @@ where
 import Control.Exception (throw)
 import Control.Monad (void, when)
 import Control.Monad.Cont (MonadIO (liftIO))
-import Control.Monad.Except (runExceptT, throwError)
-import Control.Monad.Reader (MonadReader (ask), ReaderT (runReaderT), asks)
+import Control.Monad.Except (MonadError, runExceptT, throwError)
+import Control.Monad.Reader (MonadReader (ask), ReaderT (runReaderT), asks, local)
+import Data.Functor ((<&>))
 import qualified Data.Map as Map
 import Data.Maybe (isNothing)
 import Data.Text (Text)
@@ -84,7 +85,7 @@ loadStdLib :: Env -> IO String
 loadStdLib env = liftIOThrows (show <$> eval env (List [Symbol "load", String "stdlib.scm"]))
 
 newEnv :: Map.Map Text SchemeVal
-newEnv = Map.fromList (map createPrimFun numericPrimitives)
+newEnv = Map.fromList (map createPrimFun primitives)
 
 runEval :: NewEnv -> Eval -> IO (Either SchemeError SchemeVal)
 runEval env ev = runExceptT (runReaderT ev env)
@@ -103,6 +104,60 @@ eval' (Symbol sym) = do
     Just val -> pure val
 eval' (List [Symbol "load", String filename]) = liftIO (load' filename) >>= eval' . last
 eval' (List [Symbol "interaction-environment"]) = asks (List . map (\(k, v) -> List [Symbol k, v]) . Map.toList)
+eval' (List [Symbol "quote", xs]) = pure xs
+eval' (List [Symbol "quasiquote", xs]) = evalUnquotes xs
+  where
+    evalUnquotes (List [Symbol "unquote", expr]) = eval' expr
+    evalUnquotes (List items) = List <$> traverse evalUnquotes items
+    evalUnquotes form = pure form
+eval' (List [Symbol "if", test, cons, alt]) =
+  eval' test >>= \case
+    Boolean True -> eval' cons
+    _ -> eval' alt
+eval' (List [Symbol "if", test, cons]) =
+  eval' test >>= \case
+    Boolean True -> eval' cons
+    _ -> return Nil
+eval' (List (Symbol "cond" : forms))
+  | null forms = throwError $ InvalidOperation "No true clause in cond"
+  | otherwise = case head forms of
+      List (Symbol "else" : exprs) -> if null exprs then return $ List [] else mapM eval' exprs <&> last
+      List [test, cons] -> eval' $ List [Symbol "if", test, cons, List (Symbol "cond" : tail forms)]
+      _ -> throwError $ Generic "Could not evaluate cond expression"
+-- (set!〈variable〉〈expression〉)
+eval' (List [Symbol "set!", Symbol sym, expr]) = do
+  env <- ask
+  res <- isReserved' sym >> eval' expr
+  -- local (Map.insert sym res) env
+  eval' Nil -- >>= \res -> local (Map.insert sym res env) >> return Nil
+  -- isReserved sym >> eval' expr >>= defineVariable env sym >> return Nil
+  -- Definition of the form (define〈variable〉〈expression〉
+  -- eval' (List (Symbol "define-syntax" : List (Symbol var : params) : body)) =
+  --   createMacro params body env >>= defineVariable env var
+  -- eval' (List [Symbol "define", Symbol sym, expr]) =
+  --   isReserved sym >> eval' expr >>= defineVariable env sym
+  -- -- (define (〈variable〉 〈formals〉)〈body〉[]
+  -- eval' (List (Symbol "define" : List (Symbol sym : formals) : body)) =
+  --   isReserved sym >> createNormalFun formals body env >>= defineVariable env sym
+  -- -- (define (〈variable〉.〈formal〉)〈body〉)
+  -- eval' (List (Symbol "define" : PairList (Symbol sym : formals) vararg : body)) =
+  --   isReserved sym >> createVariadicFun vararg formals body env >>= defineVariable env sym
+  -- -- Lambda function of the form (lambda (x y) (+ x y))
+  -- eval' (List (Symbol "lambda" : List formals : body)) = createNormalFun formals body env
+  -- -- Lambda function of the form (lambda (x y . z) z)
+  -- eval' (List (Symbol "lambda" : PairList formals vararg : body)) = createVariadicFun vararg formals body env
+  -- -- Lambda function of the form (lambda x x)
+  -- eval' (List (Symbol "lambda" : formal@(Symbol _) : body)) = createVariadicFun formal [] body env
+  -- -- Application of functions :D
+  -- eval' (List (fun : exprs)) = do
+  --   func <- eval' fun
+  --   case func of
+  --     Fun Fn {macro = True} -> apply func exprs >>= eval'
+  --     _ -> mapM eval' exprs >>= apply func
+eval' xs = throwError (Generic $ "Unknown: " <> showVal xs)
+
+isReserved' :: MonadError SchemeError f => Text -> f ()
+isReserved' name = when (name `elem` ["define", "lambda", "if"]) $ throwError $ ReservedName name
 
 eval :: Env -> SchemeVal -> IOSchemeResult SchemeVal
 eval _ Nil = return Nil
@@ -119,17 +174,16 @@ eval env (List [Symbol "interaction-environment"]) = do
   where
     toPair (var, val) = List [Symbol var, val]
 eval _ (List [Symbol "quote", xs]) = return xs
-eval env (List [Symbol "quasiquote", xs]) = do
-  evalUnquotes xs
+eval env (List [Symbol "quasiquote", xs]) = evalUnquotes xs
   where
     evalUnquotes (List [Symbol "unquote", expr]) = eval env expr
     evalUnquotes (List items) = List <$> traverse evalUnquotes items
     evalUnquotes form = return form
-eval env (List [Symbol "if", test, cons, alt]) = do
+eval env (List [Symbol "if", test, cons, alt]) =
   eval env test >>= \case
     Boolean True -> eval env cons
     _ -> eval env alt
-eval env (List [Symbol "if", test, cons]) = do
+eval env (List [Symbol "if", test, cons]) =
   eval env test >>= \case
     Boolean True -> eval env cons
     _ -> return Nil
