@@ -10,7 +10,7 @@ jobs:
 
       - name: Setup Haskell
         id: setup-haskell-cabal
-        uses: haskell/actions/setup@v1
+        uses: haskell/actions/setup@v2
         with:
           ghc-version: "9.0.2"
 
@@ -18,12 +18,12 @@ jobs:
         uses: mrkkrp/ormolu-action@v5
 
       - name: Set up HLint
-        uses: haskell/actions/hlint-setup@v1
+        uses: haskell/actions/hlint-setup@v2
         with:
           version: 3.3.6
 
       - name: Run HLint
-        uses: haskell/actions/hlint-run@v1
+        uses: haskell/actions/hlint-run@v2
         with:
           path: '["src/", "app/", "test/"]'
 
