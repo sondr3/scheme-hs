@@ -14,8 +14,8 @@ where
 
 import Control.Exception (throw)
 import Control.Monad (void, when)
-import Control.Monad.Cont (MonadIO (liftIO))
 import Control.Monad.Except (runExceptT, throwError)
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T

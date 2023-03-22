@@ -2,7 +2,8 @@
 
 module Scheme.Environment where
 
-import Control.Monad.Except (MonadIO (liftIO), throwError)
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (MonadIO (..))
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Text (Text)
 import Scheme.Types (Env, Fn (..), IOSchemeResult, SchemeError (..), SchemeVal (..), showVal)

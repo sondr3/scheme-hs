@@ -13,7 +13,7 @@ import Scheme.Primitives.Strings (unwrapString)
 import Scheme.Primitives.Symbols (unwrapSymbol)
 import Scheme.Types (SchemeError (..), SchemeResult, SchemeVal (..))
 
-data Unpacker = forall a. Eq a => AnyUnpacker (SchemeVal -> SchemeResult a)
+data Unpacker = forall a. (Eq a) => AnyUnpacker (SchemeVal -> SchemeResult a)
 
 equivalencePrimitives :: [(Text, [SchemeVal] -> SchemeResult SchemeVal)]
 equivalencePrimitives =

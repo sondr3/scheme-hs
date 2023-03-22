@@ -1,6 +1,7 @@
 module Scheme.Primitives.IO (ioPrimitives) where
 
 import Control.Monad.Except
+import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO

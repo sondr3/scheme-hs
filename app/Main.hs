@@ -1,5 +1,6 @@
 module Main (main) where
 
+import Control.Monad (void)
 import Control.Monad.State.Strict
 import Data.Functor ((<&>))
 import Data.List (isPrefixOf)

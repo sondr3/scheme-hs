@@ -6,7 +6,8 @@ module Scheme.Utils
   )
 where
 
-import Control.Monad.Except (MonadError, catchError, liftIO, runExceptT, throwError)
+import Control.Monad.Except (MonadError, catchError, runExceptT, throwError)
+import Control.Monad.IO.Class (liftIO)
 import Data.Functor ((<&>))
 import Data.Text (Text)
 import qualified Data.Text as T
