@@ -100,8 +100,10 @@ pComplex = do
 
 pInfinity' :: Parser Double
 pInfinity' =
-  read "Infinity" <$ chunk "+inf.0"
-    <|> read "-Infinity" <$ chunk "-inf.0"
+  read "Infinity"
+    <$ chunk "+inf.0"
+      <|> read "-Infinity"
+    <$ chunk "-inf.0"
 
 pInfinity :: Parser Number
 pInfinity = Real <$> pInfinity'
