@@ -16,7 +16,7 @@ jobs:
           ghc-version: "9.2"
 
       - name: Formatting
-        uses: mrkkrp/ormolu-action@v13
+        uses: mrkkrp/ormolu-action@v14
 
       - name: Set up HLint
         uses: haskell/actions/hlint-setup@v2
